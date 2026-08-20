@@ -7,6 +7,7 @@ import morgan from 'morgan';
 import { env } from './config/env.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { activityRouter } from './routes/activity.js';
+import { aiRouter } from './routes/ai.js';
 import { customersRouter } from './routes/customers.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { healthRouter } from './routes/health.js';
@@ -60,6 +61,7 @@ export function createApp() {
     notificationsRouter,
     activityRouter,
     reportsRouter,
+    aiRouter,
   );
 
   app.use(notFoundHandler);

@@ -24,4 +24,10 @@ export const env = {
   get openRouterApiKey() {
     return required('OPENROUTER_API_KEY');
   },
+  // Non-throwing: the AI assistant must degrade gracefully when unset
+  // (Section 12), so callers check this instead of catching a throw.
+  get openRouterApiKeyOrNull(): string | null {
+    return process.env.OPENROUTER_API_KEY || null;
+  },
+  openRouterModel: process.env.OPENROUTER_MODEL ?? 'openai/gpt-4o-mini',
 };

@@ -6,11 +6,11 @@ the full workflow from customer service request through technician
 assignment, scheduling, work reporting, quotation, invoicing, and payment
 tracking.
 
-> **Status: Phase 5 — notifications, activity history, reports, and the
-> customer portal are complete.** The full business loop (request → assign →
-> schedule → job → quotation → invoice → payment → completed) works
-> end-to-end with real triggered notifications and an audit trail at every
-> step. The AI Service Assistant (OpenRouter) is not built yet. This README
+> **Status: Phase 6 — the AI Service Assistant is built.** The full business
+> loop (request → assign → schedule → job → quotation → invoice → payment →
+> completed) works end-to-end with notifications, an audit trail, and an
+> optional AI triage step on request submission. Realtime updates,
+> production security review, and deployment are not done yet. This README
 > will grow with each phase.
 
 ## Architecture
@@ -143,19 +143,51 @@ instance.
 
 ## AI Service Assistant (Phase 6)
 
+```
+Customer types a free-text description (English or Urdu/Roman Urdu)
+                     │
+        clicks "Get AI suggestions" (optional)
+                     │
+Frontend ──▶ POST /api/ai/classify ──▶ OpenRouter (server-side only —
+                     │                  the key never reaches the browser)
+                     ▼
+     { problems[], possibleCauses[], suggestedServiceCategory,
+       suggestedTechnicianType, priority, summary }
+                     │
+     category + priority pre-filled on the form; customer reviews
+     and can change anything before submitting
+```
+
 This is an educational/portfolio project, so **no OpenRouter API key is
 provided, purchased, or committed anywhere in this repo** — `OPENROUTER_API_KEY`
 in `.env.example` is a placeholder like every other credential. To use the AI
 Service Assistant, bring your own key from [openrouter.ai/keys](https://openrouter.ai/keys)
-and put it in your local `server/.env`.
+and put it in your local `server/.env`. `OPENROUTER_MODEL` is configurable
+(default `openai/gpt-4o-mini`) if you'd rather point it at a different model.
 
-The core workflow (submitting, reviewing, assigning, and completing a service
-request) **never depends on the AI assistant working** — Section 12's
-graceful-fallback requirement means an unset or invalid key, a timeout, or a
-malformed response all fall back to manual classification rather than
-blocking the request. This isn't a limitation to route around; it's how the
-feature is supposed to behave with no key configured, which is the default
-state of this repo.
+**The core workflow never depends on the AI assistant working** — this
+isn't just a design goal, it's mechanically enforced:
+
+- `POST /service-requests` (the actual request-creation endpoint) has no
+  dependency on `/ai/classify` at all — the AI call is a separate,
+  optional step the frontend makes *before* filling in the form, never a
+  precondition for submission.
+- Every failure mode inside `classifyServiceRequest`
+  (`server/src/services/aiAssistant.ts`) — no key configured, network
+  error, a 12s timeout, a non-200 from OpenRouter, non-JSON output, or
+  JSON that doesn't match the expected shape (validated with Zod) —
+  normalizes to the same `{ success: false }` response with an HTTP `200`,
+  not a thrown error. The frontend shows one plain message ("Automatic
+  analysis isn't available right now") and the form stays fully usable.
+- **Verified in the browser** with the placeholder key still in place: the
+  button correctly showed the fallback message and the form submitted
+  normally — proving the degradation path works, which is the guarantee
+  that actually matters here, more than a successful classification would.
+- The suggested category is matched against real `service_categories` by
+  name server-side before being used — the model can't hand the frontend
+  a category that doesn't exist.
+- A dedicated rate limit (20 requests / 15 min, separate from the general
+  API limiter) caps exposure to this endpoint's real per-call cost.
 
 ## Service request workflow (Phase 2)
 
@@ -421,6 +453,6 @@ architecture.
 - [x] **Phase 3** — Scheduling, jobs, technician mobile workflow, job completion
 - [x] **Phase 4** — Quotations, invoices, payment tracking
 - [x] **Phase 5** — Customer portal, notifications, activity history, reports
-- [ ] **Phase 6** — OpenRouter AI Service Assistant
+- [x] **Phase 6** — OpenRouter AI Service Assistant
 - [ ] **Phase 7** — Realtime updates (Supabase Realtime)
 - [ ] **Phase 8** — Testing, performance, security review, production deployment

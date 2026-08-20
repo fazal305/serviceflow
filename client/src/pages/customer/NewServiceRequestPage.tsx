@@ -1,6 +1,7 @@
-import { type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { useClassifyDescription } from '../../api/ai';
 import { useServiceCategories } from '../../api/serviceCategories';
 import { useCreateServiceRequest, type Priority } from '../../api/serviceRequests';
 import { Field, inputClass } from '../../components/Field';
@@ -9,15 +10,34 @@ export function NewServiceRequestPage() {
   const navigate = useNavigate();
   const { data: categories } = useServiceCategories();
   const createRequest = useCreateServiceRequest();
+  const classify = useClassifyDescription();
+
+  const [description, setDescription] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [priority, setPriority] = useState<Priority>('MEDIUM');
+  const [aiUnavailable, setAiUnavailable] = useState(false);
+
+  async function handleGetSuggestions() {
+    setAiUnavailable(false);
+    const result = await classify.mutateAsync(description);
+    if (!result.success) {
+      setAiUnavailable(true);
+      return;
+    }
+    if (result.data.suggestedServiceCategoryId) {
+      setCategoryId(result.data.suggestedServiceCategoryId);
+    }
+    setPriority(result.data.priority);
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = new FormData(e.currentTarget);
 
     await createRequest.mutateAsync({
-      serviceCategoryId: String(form.get('serviceCategoryId')) || null,
-      description: String(form.get('description')),
-      priority: String(form.get('priority')) as Priority,
+      serviceCategoryId: categoryId || null,
+      description,
+      priority,
       preferredDate: String(form.get('preferredDate')) || null,
       preferredTime: String(form.get('preferredTime')) || null,
       address: String(form.get('address')),
@@ -26,6 +46,8 @@ export function NewServiceRequestPage() {
 
     navigate('/customer');
   }
+
+  const suggestion = classify.data?.success ? classify.data.data : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -37,8 +59,69 @@ export function NewServiceRequestPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5">
+        <Field label="Describe the problem" htmlFor="description">
+          <textarea
+            id="description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            required
+            minLength={10}
+            rows={4}
+            placeholder="What's happening? Include as much detail as you can — English or Urdu both work."
+            className={inputClass}
+          />
+        </Field>
+
+        <div>
+          <button
+            type="button"
+            onClick={handleGetSuggestions}
+            disabled={description.trim().length < 10 || classify.isPending}
+            className="rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+          >
+            {classify.isPending ? 'Analyzing…' : '✨ Get AI suggestions'}
+          </button>
+
+          {aiUnavailable && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Automatic analysis isn't available right now — no problem, just fill in the fields below
+              yourself.
+            </p>
+          )}
+
+          {suggestion && (
+            <div className="mt-3 rounded-md border border-accent/30 bg-accent/5 p-3 text-sm">
+              <p className="font-medium text-foreground">{suggestion.summary}</p>
+              {suggestion.problems.length > 0 && (
+                <p className="mt-2 text-muted-foreground">
+                  <span className="font-medium text-foreground">Likely problems: </span>
+                  {suggestion.problems.join(', ')}
+                </p>
+              )}
+              {suggestion.possibleCauses.length > 0 && (
+                <p className="mt-1 text-muted-foreground">
+                  <span className="font-medium text-foreground">Possible causes: </span>
+                  {suggestion.possibleCauses.join(', ')}
+                </p>
+              )}
+              <p className="mt-1 text-muted-foreground">
+                <span className="font-medium text-foreground">Suggested technician: </span>
+                {suggestion.suggestedTechnicianType}
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Category and priority below have been pre-filled — feel free to adjust them.
+              </p>
+            </div>
+          )}
+        </div>
+
         <Field label="Service category" htmlFor="serviceCategoryId">
-          <select id="serviceCategoryId" name="serviceCategoryId" className={inputClass}>
+          <select
+            id="serviceCategoryId"
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            className={inputClass}
+          >
             <option value="">Not sure / other</option>
             {categories?.map((c) => (
               <option key={c.id} value={c.id}>
@@ -48,20 +131,13 @@ export function NewServiceRequestPage() {
           </select>
         </Field>
 
-        <Field label="Describe the problem" htmlFor="description">
-          <textarea
-            id="description"
-            name="description"
-            required
-            minLength={10}
-            rows={4}
-            placeholder="What's happening? Include as much detail as you can."
-            className={inputClass}
-          />
-        </Field>
-
         <Field label="Priority" htmlFor="priority">
-          <select id="priority" name="priority" defaultValue="MEDIUM" className={inputClass}>
+          <select
+            id="priority"
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as Priority)}
+            className={inputClass}
+          >
             <option value="LOW">Low — no rush</option>
             <option value="MEDIUM">Medium — within a few days</option>
             <option value="HIGH">High — urgent</option>
