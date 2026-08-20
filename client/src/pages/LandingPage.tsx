@@ -5,7 +5,7 @@ export function LandingPage() {
   return (
     <>
       <SignedIn>
-        <Navigate to="/dashboard" replace />
+        <Navigate to="/app" replace />
       </SignedIn>
       <SignedOut>
         <main className="flex min-h-svh flex-col items-center justify-center gap-6 px-4 text-center">

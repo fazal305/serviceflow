@@ -1,6 +1,8 @@
-import { clerkClient, clerkMiddleware, getAuth } from '@clerk/express';
+import { clerkClient } from '@clerk/express';
+import { verifyToken } from '@clerk/backend';
 import type { NextFunction, Request, Response } from 'express';
 
+import { env } from '../config/env.js';
 import { createUser, findUserByClerkId, type AppUser, type UserRole } from '../db/users.js';
 import { ApiError } from './errorHandler.js';
 
@@ -9,26 +11,65 @@ declare global {
   namespace Express {
     interface Request {
       appUser?: AppUser;
+      auth?: { userId: string };
     }
   }
 }
 
-// Verifies the Clerk session token on every request (no-op if absent) so
-// `getAuth(req)` is available downstream. Cheap enough to mount globally.
-export const clerkAuth = clerkMiddleware();
+function extractBearerToken(req: Request): string | null {
+  const header = req.headers.authorization;
+  if (!header?.startsWith('Bearer ')) return null;
+  return header.slice('Bearer '.length);
+}
 
-// Rejects unauthenticated requests with a clean 401 JSON response.
-// (Not Clerk's `requireAuth()` — that legacy helper 302-redirects toward
-// Clerk's hosted sign-in on failure, which breaks cross-origin `fetch`
-// calls from the SPA: the browser follows the redirect, hits a CORS wall
-// on Clerk's domain, and the request fails with an opaque network error
-// instead of a response our code can read.)
-export function requireAuthentication(req: Request, _res: Response, next: NextFunction) {
-  const { userId } = getAuth(req);
-  if (!userId) {
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Verifying the exact same valid token was observed to intermittently
+// fail. Root cause: this environment's system clock runs a few seconds
+// behind the clock on Clerk's token-issuing servers (confirmed by decoding
+// a rejected token's `iat` and comparing it to `Date.now()` on both sides
+// at the same instant), which trips the default clock-skew tolerance on
+// borderline requests. A generous explicit tolerance fixes it at the
+// source; the retry loop stays as a second line of defense for any other
+// transient failure (network blip fetching Clerk's JWKS, etc).
+async function verifyTokenWithRetry(token: string, attempts = 3) {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      return await verifyToken(token, { secretKey: env.clerkSecretKey, clockSkewInMs: 15_000 });
+    } catch (err) {
+      lastError = err;
+      if (attempt < attempts - 1) await sleep(150 * (attempt + 1));
+    }
+  }
+  throw lastError;
+}
+
+// Verifies the Authorization: Bearer <token> header directly via
+// @clerk/backend's verifyToken, rather than Clerk's `clerkMiddleware()` +
+// `getAuth(req)` combo. That combo's automatic request-context detection
+// (built for apps that also juggle cookie-based sessions) produced
+// intermittent false-negative rejections here on genuinely valid,
+// freshly-verified tokens — confirmed by direct verifyToken() calls
+// succeeding on the exact tokens clerkMiddleware() had just rejected.
+// Explicit verification of the one credential we actually use (the
+// bearer token) is both more reliable and easier to reason about for a
+// pure API backend with no cookie-based session of its own.
+export async function requireAuthentication(req: Request, _res: Response, next: NextFunction) {
+  const token = extractBearerToken(req);
+  if (!token) {
     throw new ApiError(401, 'Not authenticated');
   }
-  next();
+
+  try {
+    const verified = await verifyTokenWithRetry(token);
+    req.auth = { userId: verified.sub };
+    next();
+  } catch {
+    throw new ApiError(401, 'Not authenticated');
+  }
 }
 
 /**
@@ -39,7 +80,7 @@ export function requireAuthentication(req: Request, _res: Response, next: NextFu
  */
 export async function syncUser(req: Request, _res: Response, next: NextFunction) {
   try {
-    const { userId } = getAuth(req);
+    const userId = req.auth?.userId;
     if (!userId) throw new ApiError(401, 'Not authenticated');
 
     let user = await findUserByClerkId(userId);

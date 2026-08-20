@@ -6,9 +6,9 @@ the full workflow from customer service request through technician
 assignment, scheduling, work reporting, quotation, invoicing, and payment
 tracking.
 
-> **Status: Phase 1 — authentication complete.** Business logic (service
-> requests, jobs, quotations, invoicing) is not built yet. This README will
-> grow with each phase.
+> **Status: Phase 2 — customers, service requests, technicians, and
+> assignment complete.** Scheduling, jobs, quotations, and invoicing are not
+> built yet. This README will grow with each phase.
 
 ## Architecture
 
@@ -50,7 +50,7 @@ Supabase hosts the database.
 | Database | PostgreSQL (hosted on Supabase) |
 | Auth | Clerk (roles: `ADMIN`, `TECHNICIAN`, `CUSTOMER` via custom claims) |
 | Realtime | Supabase Realtime (Postgres change subscriptions) |
-| AI | OpenRouter, called server-side only, with manual-classification fallback |
+| AI | OpenRouter, called server-side only, with manual-classification fallback — see [AI Service Assistant](#ai-service-assistant-phase-6) |
 | Deployment | Netlify (static frontend + Netlify Function backend) |
 
 ## Project structure
@@ -138,6 +138,81 @@ data** — they only exist on your own dev Clerk instance and dev database.
 Never seed these (or any `+clerk_test` accounts) against a production Clerk
 instance.
 
+## AI Service Assistant (Phase 6)
+
+This is an educational/portfolio project, so **no OpenRouter API key is
+provided, purchased, or committed anywhere in this repo** — `OPENROUTER_API_KEY`
+in `.env.example` is a placeholder like every other credential. To use the AI
+Service Assistant, bring your own key from [openrouter.ai/keys](https://openrouter.ai/keys)
+and put it in your local `server/.env`.
+
+The core workflow (submitting, reviewing, assigning, and completing a service
+request) **never depends on the AI assistant working** — Section 12's
+graceful-fallback requirement means an unset or invalid key, a timeout, or a
+malformed response all fall back to manual classification rather than
+blocking the request. This isn't a limitation to route around; it's how the
+feature is supposed to behave with no key configured, which is the default
+state of this repo.
+
+## Service request workflow (Phase 2)
+
+```
+Customer submits request (status: NEW)
+   │
+Admin reviews, assigns a technician ──▶ status: ASSIGNED
+   │                                     (creates a row in `assignments`)
+   ▼
+Scheduling / job execution — Phase 3
+```
+
+Status transitions are centralized in
+[server/src/domain/serviceRequestStatus.ts](server/src/domain/serviceRequestStatus.ts)
+(Section 19's requirement: no scattered status checks). Only the phase's
+actual transitions are enabled today (`NEW`/`UNDER_REVIEW` → `ASSIGNED` or
+`CANCELLED`); later statuses already exist in the DB enum but aren't
+reachable until the phase that uses them lands.
+
+**Technician onboarding**: admins create technician accounts from
+`/admin/technicians` — this creates a real Clerk account (temp password
+shown once, since no email provider is wired up) plus the `technicians`
+profile row that makes them assignable.
+
+### Notable bugs found and fixed during this phase
+
+Kept here because they're genuinely instructive, not because they're
+still open:
+
+- **Bearer-token API responses must disable HTTP caching.** Express sends
+  `ETag` by default; without `Cache-Control: no-store`, the browser's HTTP
+  cache doesn't know a response varies by `Authorization` header and can
+  serve/revalidate one user's cached response for a different user's
+  request. Fixed globally in `app.ts` (`app.set('etag', false)` + a
+  `no-store` header on every response) rather than per-route.
+- **Clock skew between this environment and Clerk's token-issuing
+  servers** intermittently failed JWT verification on genuinely valid
+  tokens (confirmed by decoding a rejected token's `iat` against
+  `Date.now()` on both sides at the same instant). Fixed with an explicit
+  `clockSkewInMs` tolerance on `verifyToken`, plus a short retry as a
+  second line of defense — see `server/src/middleware/auth.ts`.
+- **`clerkMiddleware()` + `getAuth(req)`** (Clerk's Express convenience
+  combo) produced intermittent false-negative auth rejections on valid
+  tokens, reproducible by re-verifying the exact rejected token directly
+  and having it succeed. Replaced with explicit `verifyToken()` on the
+  `Authorization` header — more predictable for a pure API backend with no
+  cookie-based session of its own.
+- **TanStack Query v5's `isLoading` is `false` until a query actually
+  starts fetching** — checking it as "no data yet" left a one-render gap
+  where role-gated routes (`RoleGate`) saw `data: undefined` and treated
+  that as a role mismatch, redirecting a legitimate admin away from the
+  page they'd just navigated to. Fixed by using `isPending` (true for the
+  entire "no data yet" span) everywhere a query gates a route or
+  loading/error UI.
+- Upgraded **Express 4 → 5**: Express 4 doesn't forward a rejected promise
+  from an `async` route handler to error middleware, so every `throw`
+  inside this phase's `async (req, res) => { ... }` handlers would have
+  become an unhandled rejection instead of a clean error response. Express
+  5 forwards these automatically.
+
 ## Database migrations
 
 Uses [`node-pg-migrate`](https://github.com/salsita/node-pg-migrate) — plain
@@ -199,7 +274,7 @@ architecture.
 
 - [x] **Phase 0** — Architecture, project scaffold, Netlify Function wiring
 - [x] **Phase 1** — Authentication (Clerk), `users` table + migrations, role-based authorization
-- [ ] **Phase 2** — Customers, service requests, admin dashboard, technicians, assignment
+- [x] **Phase 2** — Customers, service requests, admin dashboard, technicians, assignment
 - [ ] **Phase 3** — Scheduling, jobs, technician mobile workflow
 - [ ] **Phase 4** — Quotations, invoices, payment tracking
 - [ ] **Phase 5** — Customer portal, notifications, activity history, reports

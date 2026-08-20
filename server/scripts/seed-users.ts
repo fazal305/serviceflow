@@ -40,12 +40,25 @@ async function findExistingClerkUser(email: string) {
   return data[0] ?? null;
 }
 
-async function upsertDbUser(clerkUserId: string, role: UserRole, email: string, fullName: string) {
-  await getPool().query(
+async function upsertDbUser(clerkUserId: string, role: UserRole, email: string, fullName: string): Promise<string> {
+  const { rows } = await getPool().query<{ id: string }>(
     `INSERT INTO users (clerk_user_id, role, email, full_name)
      VALUES ($1, $2, $3, $4)
-     ON CONFLICT (clerk_user_id) DO UPDATE SET role = EXCLUDED.role, email = EXCLUDED.email`,
+     ON CONFLICT (clerk_user_id) DO UPDATE SET role = EXCLUDED.role, email = EXCLUDED.email
+     RETURNING id`,
     [clerkUserId, role, email, fullName],
+  );
+  return rows[0].id;
+}
+
+// The seeded TECHNICIAN account needs a `technicians` table row (not just
+// a `users` row) to be assignable to service requests — that's what
+// distinguishes "a user with role TECHNICIAN" from an actual field
+// technician profile admins can dispatch.
+async function ensureTechnicianProfile(userId: string): Promise<void> {
+  await getPool().query(
+    `INSERT INTO technicians (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`,
+    [userId],
   );
 }
 
@@ -75,7 +88,16 @@ async function main() {
       console.log(`Clerk user already existed for ${account.role}: ${account.email} (metadata refreshed)`);
     }
 
-    await upsertDbUser(clerkUser.id, account.role, account.email, `${account.firstName} ${account.lastName}`);
+    const userId = await upsertDbUser(
+      clerkUser.id,
+      account.role,
+      account.email,
+      `${account.firstName} ${account.lastName}`,
+    );
+
+    if (account.role === 'TECHNICIAN') {
+      await ensureTechnicianProfile(userId);
+    }
   }
 
   console.log('\nSeeded development test accounts (password for all: ' + DEV_PASSWORD + ')');

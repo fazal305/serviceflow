@@ -26,6 +26,7 @@ export function useMe() {
       const token = await getToken();
       const res = await fetch(`${API_URL}/me`, {
         headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
       });
       if (!res.ok) throw new Error(`Failed to load current user (${res.status})`);
       return res.json();
