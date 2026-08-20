@@ -6,11 +6,12 @@ the full workflow from customer service request through technician
 assignment, scheduling, work reporting, quotation, invoicing, and payment
 tracking.
 
-> **Status: Phase 6 — the AI Service Assistant is built.** The full business
-> loop (request → assign → schedule → job → quotation → invoice → payment →
-> completed) works end-to-end with notifications, an audit trail, and an
-> optional AI triage step on request submission. Realtime updates,
-> production security review, and deployment are not done yet. This README
+> **Status: Phase 7 — realtime updates are live.** The full business loop
+> (request → assign → schedule → job → quotation → invoice → payment →
+> completed) works end-to-end with notifications, an audit trail, an
+> optional AI triage step, and live-pushed updates — no manual refresh
+> needed to see a new notification, status change, or dashboard number.
+> Production security review and deployment are not done yet. This README
 > will grow with each phase.
 
 ## Architecture
@@ -346,6 +347,65 @@ they represent:
   forcing a fresh DOM node (and a fresh `defaultValue`) whenever the
   actual remaining balance changes.
 
+## Realtime updates (Phase 7)
+
+**Why not the "obvious" Supabase Realtime setup:** the standard pattern
+(subscribe to Postgres Changes, gate rows with Row Level Security) assumes
+**Supabase Auth**-issued JWTs so `auth.uid()` works inside RLS policies.
+We use **Clerk**, not Supabase Auth — so that pattern doesn't apply
+without either exposing every row to anyone holding the anon key (no RLS)
+or reimplementing our entire authorization model a second time, in SQL,
+inside Postgres policies. Neither is worth it for what this feature
+actually needs.
+
+**What we built instead — realtime as a signal, not a data channel:**
+
+```
+Something happens (technician assigned, quotation ready, payment
+recorded, ...) — the exact same call sites that already create a
+`notifications` row (see Phase 5)
+                     │
+        createNotification() also calls broadcastToUser()
+                     │
+   Server (service-role key, bypasses RLS) ──▶ Supabase Realtime
+                     │                          channel `user:<id>`
+                     ▼
+        Browser (anon key) subscribed to its own `user:<id>` channel
+                     │
+     Payload is content-free — just { kind: "notifications" } —
+     the client only ever uses it as a cue to invalidate the relevant
+     TanStack Query caches and refetch through the normal, already-
+     authenticated REST API. Real data never travels over the
+     broadcast channel itself.
+```
+
+Because the channel carries no data, a guessed or leaked channel name
+exposes nothing beyond "this user should refetch something" — the actual
+authorization boundary is still the same JWT-checked REST API it always
+was. This is a smaller, more honest guarantee than full RLS-based
+per-row authorization would be, and the README says so rather than
+overstating it.
+
+**Fully optional, same as the AI assistant:** if `SUPABASE_URL` /
+`SUPABASE_SERVICE_ROLE_KEY` (server) or `VITE_SUPABASE_URL` /
+`VITE_SUPABASE_ANON_KEY` (client) aren't configured, broadcasting and
+subscribing both no-op silently — every query this would refresh already
+polls on its own interval (30s for notifications), so the app is fully
+functional either way, just less instant.
+
+**Verified live**, not just no-op-tested: subscribed to a real user's
+channel from the browser console, triggered the exact same
+`broadcastToUser()` function the server calls from a standalone script,
+and confirmed the browser received the real payload over the actual
+Supabase Realtime connection — not a simulated event.
+
+**Performance**: `@supabase/supabase-js` (~200KB) is dynamically imported
+only when Realtime is actually configured, from the one hook
+(`useRealtimeSync`, wired once into `ProtectedRoute` so every role gets it
+from a single integration point) that would otherwise pull it into every
+authenticated user's bundle whether they needed it or not — the same
+lazy-loading approach used for Recharts in Phase 5.
+
 ## Notifications, activity history & reports (Phase 5)
 
 **Notifications are triggered by real events, not decorative.** Every
@@ -454,5 +514,5 @@ architecture.
 - [x] **Phase 4** — Quotations, invoices, payment tracking
 - [x] **Phase 5** — Customer portal, notifications, activity history, reports
 - [x] **Phase 6** — OpenRouter AI Service Assistant
-- [ ] **Phase 7** — Realtime updates (Supabase Realtime)
+- [x] **Phase 7** — Realtime updates (Supabase Realtime)
 - [ ] **Phase 8** — Testing, performance, security review, production deployment

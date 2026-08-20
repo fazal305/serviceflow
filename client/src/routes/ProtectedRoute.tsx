@@ -1,8 +1,15 @@
 import { useAuth } from '@clerk/clerk-react';
 import { Navigate, Outlet } from 'react-router-dom';
 
+import { useRealtimeSync } from '../hooks/useRealtimeSync';
+
 export function ProtectedRoute() {
   const { isLoaded, isSignedIn } = useAuth();
+
+  // Mounted once here rather than in each layout (admin/customer/
+  // technician) so every authenticated role gets realtime sync from a
+  // single integration point instead of three separate ones.
+  useRealtimeSync();
 
   if (!isLoaded) {
     return (

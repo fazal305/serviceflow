@@ -1,4 +1,5 @@
 import { getPool } from './pool.js';
+import { broadcastToUser } from '../services/realtime.js';
 
 export interface Notification {
   id: string;
@@ -44,6 +45,10 @@ export async function createNotification(params: {
      VALUES ($1, $2, $3, $4, $5)`,
     [params.userId, params.title, params.message, params.entityType ?? null, params.entityId ?? null],
   );
+
+  // Fire-and-forget: a slow/failed realtime broadcast must never delay or
+  // fail the request that triggered this notification.
+  void broadcastToUser(params.userId, 'notifications');
 }
 
 export async function notifyAdmins(params: { title: string; message: string; entityType?: string; entityId?: string }): Promise<void> {

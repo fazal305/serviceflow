@@ -30,4 +30,13 @@ export const env = {
     return process.env.OPENROUTER_API_KEY || null;
   },
   openRouterModel: process.env.OPENROUTER_MODEL ?? 'openai/gpt-4o-mini',
+  // Realtime is an optional enhancement (Section 17) — when either is
+  // unset, broadcasting just no-ops and clients fall back to their
+  // existing polling. Never throws.
+  get supabaseUrl(): string | null {
+    return process.env.SUPABASE_URL || null;
+  },
+  get supabaseServiceRoleKey(): string | null {
+    return process.env.SUPABASE_SERVICE_ROLE_KEY || null;
+  },
 };
