@@ -17,6 +17,14 @@ export function CustomerLayout() {
             My requests
           </NavLink>
           <NavLink
+            to="/customer/invoices"
+            className={({ isActive }) =>
+              `text-sm font-medium ${isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}`
+            }
+          >
+            Invoices
+          </NavLink>
+          <NavLink
             to="/customer/requests/new"
             className={({ isActive }) =>
               `rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${

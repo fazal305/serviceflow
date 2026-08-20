@@ -6,8 +6,10 @@ the full workflow from customer service request through technician
 assignment, scheduling, work reporting, quotation, invoicing, and payment
 tracking.
 
-> **Status: Phase 3 — scheduling, jobs, and the technician mobile workflow
-> complete.** Quotations, invoices, and payments are not built yet. This
+> **Status: Phase 4 — quotations, invoices, and payment tracking complete.**
+> The full business loop (request → assign → schedule → job → quotation →
+> invoice → payment → completed) works end-to-end. Customer portal polish,
+> notifications, activity history, and reports are not built yet. This
 > README will grow with each phase.
 
 ## Architecture
@@ -255,6 +257,62 @@ Two more bugs found and fixed during this phase:
   (`types.setTypeParser(1082, ...)` in `server/src/db/pool.ts`), rather
   than working around it at every call site that touches a date column.
 
+## Quotations, invoices & payments (Phase 4)
+
+```
+WAITING_FOR_APPROVAL ──(admin quotes)──▶ [Quotation: PENDING]
+                                               │
+                              customer approves │ rejects
+                                               ▼
+                                    QUOTATION_APPROVED
+                                               │
+                                admin creates invoice (items snapshotted
+                                from the quotation — an invoice is a
+                                financial record, must stay immutable
+                                even if the quotation could change)
+                                               │
+                                       [Invoice: UNPAID]
+                                               │
+                            admin records payments (manual — Cash/Bank
+                            Transfer/Online, no real gateway per spec)
+                                               │
+                          sum(payments) < total → PARTIALLY_PAID
+                          sum(payments) >= total → PAID ──▶ COMPLETED
+```
+
+- **Rejecting** a quotation leaves the request in `WAITING_FOR_APPROVAL` so
+  admin can send a revised one — nothing about rejection is destructive.
+- **Invoice status is derived, not admin-set**: `UNPAID` /
+  `PARTIALLY_PAID` / `PAID` come from summing actual payment rows, and
+  `OVERDUE` is computed at read time from `due_date` rather than stored —
+  avoiding a second source of truth that could drift out of sync with the
+  payments that actually happened.
+- **Paying an invoice off in full auto-completes the service request** —
+  the only place in the whole codebase where a status transition happens
+  as a side effect of something other than a direct user action, and it's
+  exactly what closes the loop the spec's own workflow diagram describes.
+
+Two more real bugs found and fixed here, worth keeping for the pattern
+they represent:
+
+- **Native `<input max>` validation vs. floating-point money math.** The
+  "record payment" field pre-filled the remaining balance via
+  `remaining.toFixed(2)` (e.g. `"9.08"`) but set `max={remaining}` from
+  the raw float (`9.079999999999998` — `109.08 - 100` isn't exact in
+  IEEE 754). The browser's native range validation silently blocked every
+  submission (`value 9.08 > max 9.079999999999998`) with no visible error
+  — the button just did nothing. Fixed by rounding `remaining` to money
+  precision once, at the source, so every consumer (the `max` attribute,
+  the pre-filled value, the display) uses the same number.
+- **`defaultValue` on a DOM node that outlives the data it was seeded
+  from.** The same input kept showing the *first* payment's leftover
+  amount when reopened for a second payment, because the underlying
+  `<dialog>` stays mounted between opens (only toggled), and React's
+  `defaultValue` only applies once, on creation — it doesn't refresh when
+  the prop changes on a later render. Fixed with `key={remaining}`,
+  forcing a fresh DOM node (and a fresh `defaultValue`) whenever the
+  actual remaining balance changes.
+
 ## Database migrations
 
 Uses [`node-pg-migrate`](https://github.com/salsita/node-pg-migrate) — plain
@@ -318,7 +376,7 @@ architecture.
 - [x] **Phase 1** — Authentication (Clerk), `users` table + migrations, role-based authorization
 - [x] **Phase 2** — Customers, service requests, admin dashboard, technicians, assignment
 - [x] **Phase 3** — Scheduling, jobs, technician mobile workflow, job completion
-- [ ] **Phase 4** — Quotations, invoices, payment tracking
+- [x] **Phase 4** — Quotations, invoices, payment tracking
 - [ ] **Phase 5** — Customer portal, notifications, activity history, reports
 - [ ] **Phase 6** — OpenRouter AI Service Assistant
 - [ ] **Phase 7** — Realtime updates (Supabase Realtime)

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import { useScheduleRequest } from '../../api/jobs';
 import {
@@ -154,6 +155,12 @@ export function AdminServiceRequestsPage() {
                         Schedule
                       </button>
                     )}
+                    <Link
+                      to={`/admin/service-requests/${request.id}`}
+                      className="ml-2 text-xs font-medium text-accent hover:underline"
+                    >
+                      View
+                    </Link>
                   </td>
                 </tr>
               ))}

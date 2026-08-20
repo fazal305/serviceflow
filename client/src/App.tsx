@@ -8,9 +8,13 @@ import { SignInPage } from './pages/SignInPage';
 import { SignUpPage } from './pages/SignUpPage';
 import { AdminCustomersPage } from './pages/admin/AdminCustomersPage';
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
+import { AdminInvoicesPage } from './pages/admin/AdminInvoicesPage';
+import { AdminRequestDetailPage } from './pages/admin/AdminRequestDetailPage';
 import { AdminSchedulePage } from './pages/admin/AdminSchedulePage';
 import { AdminServiceRequestsPage } from './pages/admin/AdminServiceRequestsPage';
 import { AdminTechniciansPage } from './pages/admin/AdminTechniciansPage';
+import { CustomerInvoicesPage } from './pages/customer/CustomerInvoicesPage';
+import { CustomerRequestDetailPage } from './pages/customer/CustomerRequestDetailPage';
 import { CustomerRequestsPage } from './pages/customer/CustomerRequestsPage';
 import { NewServiceRequestPage } from './pages/customer/NewServiceRequestPage';
 import { JobDetailPage } from './pages/technician/JobDetailPage';
@@ -32,7 +36,9 @@ function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboardPage />} />
             <Route path="service-requests" element={<AdminServiceRequestsPage />} />
+            <Route path="service-requests/:id" element={<AdminRequestDetailPage />} />
             <Route path="schedule" element={<AdminSchedulePage />} />
+            <Route path="invoices" element={<AdminInvoicesPage />} />
             <Route path="technicians" element={<AdminTechniciansPage />} />
             <Route path="customers" element={<AdminCustomersPage />} />
           </Route>
@@ -42,6 +48,8 @@ function App() {
           <Route path="/customer" element={<CustomerLayout />}>
             <Route index element={<CustomerRequestsPage />} />
             <Route path="requests/new" element={<NewServiceRequestPage />} />
+            <Route path="requests/:id" element={<CustomerRequestDetailPage />} />
+            <Route path="invoices" element={<CustomerInvoicesPage />} />
           </Route>
         </Route>
 
