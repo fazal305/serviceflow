@@ -1,0 +1,28 @@
+{
+  "name": "serviceflow",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ServiceFlow — service-business management platform (customer requests, technician dispatch, quotations, invoicing, payments).",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev:client": "npm run dev --workspace client",
+    "dev:server": "npm run dev --workspace server",
+    "build:client": "npm run build --workspace client",
+    "build:server": "npm run build --workspace server",
+    "lint": "npm run lint --workspace client && npm run lint --workspace server"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@netlify/functions": "^3.0.0",
+    "typescript": "^5.7.2"
+  },
+  "allowScripts": {
+    "esbuild@0.25.5": true,
+    "esbuild@0.28.2": true
+  }
+}

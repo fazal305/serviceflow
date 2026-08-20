@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+/*
+ * ServiceFlow design tokens — Minimalism/Swiss style, professional
+ * navy + blue palette. Every color used in components should reference
+ * one of these tokens (via Tailwind theme below), never a raw hex value.
+ */
+@theme {
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --color-primary: #0f172a;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #334155;
+  --color-secondary-foreground: #ffffff;
+  --color-accent: #0369a1;
+  --color-accent-foreground: #ffffff;
+
+  --color-background: #f8fafc;
+  --color-foreground: #020617;
+  --color-card: #ffffff;
+  --color-card-foreground: #020617;
+  --color-muted: #e8ecf1;
+  --color-muted-foreground: #475569;
+  --color-border: #e2e8f0;
+
+  --color-destructive: #dc2626;
+  --color-destructive-foreground: #ffffff;
+  --color-success: #16a34a;
+  --color-success-foreground: #ffffff;
+  --color-warning: #d97706;
+  --color-warning-foreground: #ffffff;
+
+  --color-ring: #0f172a;
+}
+
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-background: #0b1120;
+    --color-foreground: #f1f5f9;
+    --color-card: #111827;
+    --color-card-foreground: #f1f5f9;
+    --color-muted: #1e293b;
+    --color-muted-foreground: #94a3b8;
+    --color-border: #1f2937;
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-accent;
+  }
+}

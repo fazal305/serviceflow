@@ -1,0 +1,26 @@
+[build]
+  base = "."
+  command = "npm run build:client"
+  publish = "client/dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# The client calls `/api/...`; Netlify rewrites that to our single
+# Express-in-a-Function handler instead of us maintaining per-route
+# redirects — new routes added inside server/src/routes need no
+# netlify.toml changes.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/api/:splat"
+  status = 200
+
+# SPA fallback so client-side routing (React Router) works on refresh/deep link.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
