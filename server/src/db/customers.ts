@@ -61,6 +61,14 @@ export async function listCustomers(search?: string): Promise<CustomerWithUser[]
   return rows.map(toCustomer);
 }
 
+export async function updateCustomerAddress(userId: string, address: string | null): Promise<void> {
+  await getPool().query(
+    `INSERT INTO customers (user_id, address) VALUES ($1, $2)
+     ON CONFLICT (user_id) DO UPDATE SET address = EXCLUDED.address, updated_at = now()`,
+    [userId, address],
+  );
+}
+
 export async function getCustomerById(id: string): Promise<CustomerWithUser | null> {
   const { rows } = await getPool().query<CustomerRow>(
     `SELECT c.id, c.user_id, c.address, c.created_at, u.email, u.full_name, u.phone

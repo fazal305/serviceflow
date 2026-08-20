@@ -59,3 +59,14 @@ export async function createUser(params: {
   );
   return toAppUser(rows[0]);
 }
+
+export async function updateUserProfile(
+  id: string,
+  params: { fullName: string | null; phone: string | null },
+): Promise<AppUser> {
+  const { rows } = await getPool().query<UserRow>(
+    `UPDATE users SET full_name = $1, phone = $2, updated_at = now() WHERE id = $3 RETURNING *`,
+    [params.fullName, params.phone, id],
+  );
+  return toAppUser(rows[0]);
+}

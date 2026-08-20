@@ -6,11 +6,12 @@ the full workflow from customer service request through technician
 assignment, scheduling, work reporting, quotation, invoicing, and payment
 tracking.
 
-> **Status: Phase 4 — quotations, invoices, and payment tracking complete.**
-> The full business loop (request → assign → schedule → job → quotation →
-> invoice → payment → completed) works end-to-end. Customer portal polish,
-> notifications, activity history, and reports are not built yet. This
-> README will grow with each phase.
+> **Status: Phase 5 — notifications, activity history, reports, and the
+> customer portal are complete.** The full business loop (request → assign →
+> schedule → job → quotation → invoice → payment → completed) works
+> end-to-end with real triggered notifications and an audit trail at every
+> step. The AI Service Assistant (OpenRouter) is not built yet. This README
+> will grow with each phase.
 
 ## Architecture
 
@@ -313,6 +314,48 @@ they represent:
   forcing a fresh DOM node (and a fresh `defaultValue`) whenever the
   actual remaining balance changes.
 
+## Notifications, activity history & reports (Phase 5)
+
+**Notifications are triggered by real events, not decorative.** Every
+meaningful action in the workflow creates a persisted row for the actual
+person who needs to know:
+
+| Event | Who's notified |
+|---|---|
+| Customer submits a request | All admins |
+| Admin assigns a technician | Customer + the assigned technician |
+| Admin schedules the job | Customer |
+| Technician completes the job | Customer |
+| Admin sends a quotation | Customer |
+| Customer approves/rejects a quotation | All admins |
+| Admin creates an invoice | Customer |
+| Admin records a payment | Customer (different message if it's the final payment) |
+
+The bell icon (in every layout — admin, customer, and technician) polls
+unread count every 30s and marks everything read when opened. This is
+genuinely persisted state in the `notifications` table, not a toast that
+disappears on refresh.
+
+**Activity log** (`/admin/activity`) records actor + action + entity +
+timestamp for every state-changing action across the whole app — the
+audit trail Section 34 asks for. Both `notifications` and `activity_logs`
+are populated from the same call sites, but serve different purposes:
+notifications are addressed to one person about something relevant to
+*them*; the activity log is an admin-only feed of everything that
+happened, addressed to no one in particular.
+
+**Reports** (`/admin/reports`) answer real business questions with real
+aggregation queries — revenue by month (charted, since a trend genuinely
+reads faster as a chart than a table), completed jobs, jobs by category,
+completed jobs by technician, pending payments total, and average days to
+complete. Recharts (and its d3 dependencies) is lazy-loaded for this one
+route only — customers and technicians never download it.
+
+**Customer portal** now covers every page Section 8 lists: My Requests
+(active), Service History (completed/cancelled), Request Detail
+(quotation approve/reject, invoice view), Invoices, and an editable
+Profile (name, phone, default address) via `PATCH /me`.
+
 ## Database migrations
 
 Uses [`node-pg-migrate`](https://github.com/salsita/node-pg-migrate) — plain
@@ -377,7 +420,7 @@ architecture.
 - [x] **Phase 2** — Customers, service requests, admin dashboard, technicians, assignment
 - [x] **Phase 3** — Scheduling, jobs, technician mobile workflow, job completion
 - [x] **Phase 4** — Quotations, invoices, payment tracking
-- [ ] **Phase 5** — Customer portal, notifications, activity history, reports
+- [x] **Phase 5** — Customer portal, notifications, activity history, reports
 - [ ] **Phase 6** — OpenRouter AI Service Assistant
 - [ ] **Phase 7** — Realtime updates (Supabase Realtime)
 - [ ] **Phase 8** — Testing, performance, security review, production deployment

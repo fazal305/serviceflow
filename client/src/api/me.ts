@@ -1,5 +1,7 @@
 import { useAuth } from '@clerk/clerk-react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { useApi } from './useApi';
 
 export type UserRole = 'ADMIN' | 'TECHNICIAN' | 'CUSTOMER';
 
@@ -10,6 +12,7 @@ export interface AppUser {
   email: string;
   fullName: string | null;
   phone: string | null;
+  address?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -30,6 +33,18 @@ export function useMe() {
       });
       if (!res.ok) throw new Error(`Failed to load current user (${res.status})`);
       return res.json();
+    },
+  });
+}
+
+export function useUpdateProfile() {
+  const api = useApi();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (profile: { fullName: string | null; phone: string | null; address: string | null }) =>
+      api<AppUser>('/me', { method: 'PATCH', body: JSON.stringify(profile) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['me'] });
     },
   });
 }

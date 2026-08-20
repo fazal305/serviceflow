@@ -1,6 +1,8 @@
 import { UserButton } from '@clerk/clerk-react';
 import { NavLink, Outlet } from 'react-router-dom';
 
+import { NotificationBell } from '../components/NotificationBell';
+
 const NAV_ITEMS = [
   { to: '/admin', label: 'Dashboard', end: true },
   { to: '/admin/service-requests', label: 'Service Requests' },
@@ -8,6 +10,8 @@ const NAV_ITEMS = [
   { to: '/admin/invoices', label: 'Invoices' },
   { to: '/admin/technicians', label: 'Technicians' },
   { to: '/admin/customers', label: 'Customers' },
+  { to: '/admin/reports', label: 'Reports' },
+  { to: '/admin/activity', label: 'Activity' },
 ];
 
 export function AdminLayout() {
@@ -38,9 +42,13 @@ export function AdminLayout() {
       <div className="flex-1">
         <header className="flex items-center justify-between border-b border-border bg-card px-6 py-3 sm:hidden">
           <p className="text-base font-semibold text-foreground">ServiceFlow</p>
-          <UserButton afterSignOutUrl="/" />
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <UserButton afterSignOutUrl="/" />
+          </div>
         </header>
-        <header className="hidden items-center justify-end border-b border-border px-6 py-3 sm:flex">
+        <header className="hidden items-center justify-end gap-2 border-b border-border px-6 py-3 sm:flex">
+          <NotificationBell />
           <UserButton afterSignOutUrl="/" />
         </header>
 

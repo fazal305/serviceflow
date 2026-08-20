@@ -5,6 +5,7 @@ import { useJobs, type Job } from '../../api/jobs';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorState } from '../../components/ErrorState';
 import { LoadingState } from '../../components/LoadingState';
+import { NotificationBell } from '../../components/NotificationBell';
 import { StatusBadge } from '../../components/StatusBadge';
 
 function todayStr(): string {
@@ -47,7 +48,10 @@ export function TechnicianHomePage() {
     <main className="mx-auto flex min-h-svh max-w-md flex-col gap-6 px-4 py-6">
       <header className="flex items-center justify-between">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">Today's Jobs</h1>
-        <UserButton afterSignOutUrl="/" />
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <UserButton afterSignOutUrl="/" />
+        </div>
       </header>
 
       {isPending && <LoadingState label="Loading your jobs…" />}

@@ -6,13 +6,16 @@ import morgan from 'morgan';
 
 import { env } from './config/env.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { activityRouter } from './routes/activity.js';
 import { customersRouter } from './routes/customers.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { healthRouter } from './routes/health.js';
 import { invoicesRouter } from './routes/invoices.js';
 import { jobsRouter } from './routes/jobs.js';
 import { meRouter } from './routes/me.js';
+import { notificationsRouter } from './routes/notifications.js';
 import { quotationsRouter } from './routes/quotations.js';
+import { reportsRouter } from './routes/reports.js';
 import { serviceCategoriesRouter } from './routes/serviceCategories.js';
 import { serviceRequestsRouter } from './routes/serviceRequests.js';
 import { techniciansRouter } from './routes/technicians.js';
@@ -54,6 +57,9 @@ export function createApp() {
     invoicesRouter,
     jobsRouter,
     dashboardRouter,
+    notificationsRouter,
+    activityRouter,
+    reportsRouter,
   );
 
   app.use(notFoundHandler);

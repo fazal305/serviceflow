@@ -1,14 +1,20 @@
 import { Router, type Request } from 'express';
 import { z } from 'zod';
 
-import { findOrCreateCustomerByUserId } from '../db/customers.js';
+import { logActivity } from '../db/activityLog.js';
+import { findOrCreateCustomerByUserId, getCustomerById } from '../db/customers.js';
 import { getInvoiceById, listInvoicesForAdmin, listInvoicesForCustomer } from '../db/invoices.js';
+import { createNotification } from '../db/notifications.js';
 import { recordPayment } from '../db/payments.js';
 import { requireAuthentication, requireRole, syncUser } from '../middleware/auth.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { validateBody, validateQuery } from '../middleware/validate.js';
 
 export const invoicesRouter = Router();
+
+function money(value: string | number): string {
+  return `$${Number(value).toFixed(2)}`;
+}
 
 const listQuerySchema = z.object({
   status: z.enum(['UNPAID', 'PARTIALLY_PAID', 'PAID']).optional(),
@@ -87,6 +93,30 @@ invoicesRouter.post(
       recordedBy: req.appUser!.id,
     });
 
-    res.status(201).json(await getInvoiceById(invoice.id));
+    const updated = await getInvoiceById(invoice.id);
+    const customer = await getCustomerById(invoice.customerId);
+
+    await Promise.all([
+      logActivity({
+        actorUserId: req.appUser!.id,
+        action: 'PAYMENT_RECORDED',
+        entityType: 'invoice',
+        entityId: invoice.id,
+        metadata: { amount: req.body.amount, method: req.body.method },
+      }),
+      customer &&
+        createNotification({
+          userId: customer.userId,
+          title: updated?.status === 'PAID' ? 'Payment received — job complete' : 'Payment received',
+          message:
+            updated?.status === 'PAID'
+              ? `Your final payment of ${money(req.body.amount)} was received. Your service is now complete.`
+              : `A payment of ${money(req.body.amount)} was recorded on invoice ${invoice.invoiceNumber}.`,
+          entityType: 'invoice',
+          entityId: invoice.id,
+        }),
+    ]);
+
+    res.status(201).json(updated);
   },
 );

@@ -1,6 +1,8 @@
 import { Router, type Request } from 'express';
 import { z } from 'zod';
 
+import { logActivity } from '../db/activityLog.js';
+import { getCustomerById } from '../db/customers.js';
 import {
   addJobNote,
   addJobPart,
@@ -13,6 +15,8 @@ import {
   listJobsForTechnician,
   startJob,
 } from '../db/jobs.js';
+import { createNotification } from '../db/notifications.js';
+import { getServiceRequestById } from '../db/serviceRequests.js';
 import { canTransition } from '../domain/serviceRequestStatus.js';
 import { requireAuthentication, requireRole, syncUser } from '../middleware/auth.js';
 import { ApiError } from '../middleware/errorHandler.js';
@@ -66,6 +70,14 @@ jobsRouter.post(
       throw new ApiError(409, `Cannot start a job in status ${job.status}`);
     }
     await startJob(job.id, job.serviceRequestId);
+
+    await logActivity({
+      actorUserId: req.appUser!.id,
+      action: 'JOB_STARTED',
+      entityType: 'job',
+      entityId: job.id,
+    });
+
     res.json(await getJobById(job.id));
   },
 );
@@ -81,6 +93,26 @@ jobsRouter.post(
       throw new ApiError(409, `Cannot complete a job in status ${job.status}`);
     }
     await completeJob(job.id, job.serviceRequestId);
+
+    const serviceRequest = await getServiceRequestById(job.serviceRequestId);
+    const customer = serviceRequest ? await getCustomerById(serviceRequest.customerId) : null;
+    await Promise.all([
+      logActivity({
+        actorUserId: req.appUser!.id,
+        action: 'JOB_COMPLETED',
+        entityType: 'job',
+        entityId: job.id,
+      }),
+      customer &&
+        createNotification({
+          userId: customer.userId,
+          title: 'Job completed',
+          message: 'The technician has completed the work. A quotation will follow shortly.',
+          entityType: 'service_request',
+          entityId: job.serviceRequestId,
+        }),
+    ]);
+
     res.json(await getJobById(job.id));
   },
 );

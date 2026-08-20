@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { Router } from 'express';
 import { z } from 'zod';
 
+import { logActivity } from '../db/activityLog.js';
 import { createTechnicianProfile, listTechnicians } from '../db/technicians.js';
 import { createUser, findUserByClerkId } from '../db/users.js';
 import { requireAuthentication, requireRole, syncUser } from '../middleware/auth.js';
@@ -75,6 +76,14 @@ techniciansRouter.post(
     const technician = await createTechnicianProfile({
       userId: dbUser.id,
       serviceCategoryId,
+    });
+
+    await logActivity({
+      actorUserId: req.appUser!.id,
+      action: 'TECHNICIAN_CREATED',
+      entityType: 'technician',
+      entityId: technician.id,
+      metadata: { email },
     });
 
     // Temp password returned once so the admin can hand it to the

@@ -3,9 +3,11 @@ import { z } from 'zod';
 
 import type { Request } from 'express';
 
-import { findOrCreateCustomerByUserId } from '../db/customers.js';
+import { logActivity } from '../db/activityLog.js';
+import { findOrCreateCustomerByUserId, getCustomerById } from '../db/customers.js';
 import { getInvoiceForRequest } from '../db/invoices.js';
 import { scheduleJob } from '../db/jobs.js';
+import { createNotification, notifyAdmins } from '../db/notifications.js';
 import { createQuotation, getLatestQuotationForRequest } from '../db/quotations.js';
 import {
   assignTechnician,
@@ -20,6 +22,10 @@ import { canTransition } from '../domain/serviceRequestStatus.js';
 import { requireAuthentication, requireRole, syncUser } from '../middleware/auth.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { validateBody, validateQuery } from '../middleware/validate.js';
+
+function money(value: string | number): string {
+  return `$${Number(value).toFixed(2)}`;
+}
 
 async function loadRequestForViewer(req: Request): Promise<ServiceRequest> {
   const request = await getServiceRequestById(req.params.id as string);
@@ -56,6 +62,22 @@ serviceRequestsRouter.post(
   async (req, res) => {
     const customer = await findOrCreateCustomerByUserId(req.appUser!.id);
     const created = await createServiceRequest({ customerId: customer.id, ...req.body });
+
+    await Promise.all([
+      logActivity({
+        actorUserId: req.appUser!.id,
+        action: 'REQUEST_SUBMITTED',
+        entityType: 'service_request',
+        entityId: created.id,
+      }),
+      notifyAdmins({
+        title: 'New service request',
+        message: `${customer.fullName ?? customer.email} submitted a new request: ${created.description.slice(0, 80)}`,
+        entityType: 'service_request',
+        entityId: created.id,
+      }),
+    ]);
+
     res.status(201).json(created);
   },
 );
@@ -134,6 +156,32 @@ serviceRequestsRouter.post(
       assignedBy: req.appUser!.id,
     });
 
+    const customer = await getCustomerById(request.customerId);
+    await Promise.all([
+      logActivity({
+        actorUserId: req.appUser!.id,
+        action: 'TECHNICIAN_ASSIGNED',
+        entityType: 'service_request',
+        entityId: request.id,
+        metadata: { technicianId: technician.id },
+      }),
+      customer &&
+        createNotification({
+          userId: customer.userId,
+          title: 'Technician assigned',
+          message: `A technician has been assigned to your request.`,
+          entityType: 'service_request',
+          entityId: request.id,
+        }),
+      createNotification({
+        userId: technician.userId,
+        title: 'New job assigned',
+        message: `You've been assigned a new ${request.serviceCategoryName ?? 'service'} request at ${request.address}.`,
+        entityType: 'service_request',
+        entityId: request.id,
+      }),
+    ]);
+
     res.json(await getServiceRequestById(request.id));
   },
 );
@@ -162,6 +210,25 @@ serviceRequestsRouter.post(
       scheduledDate: req.body.scheduledDate,
       scheduledTime: req.body.scheduledTime,
     });
+
+    const customer = await getCustomerById(request.customerId);
+    await Promise.all([
+      logActivity({
+        actorUserId: req.appUser!.id,
+        action: 'JOB_SCHEDULED',
+        entityType: 'service_request',
+        entityId: request.id,
+        metadata: { scheduledDate: req.body.scheduledDate },
+      }),
+      customer &&
+        createNotification({
+          userId: customer.userId,
+          title: 'Service scheduled',
+          message: `Your service has been scheduled for ${req.body.scheduledDate}${req.body.scheduledTime ? ` (${req.body.scheduledTime})` : ''}.`,
+          entityType: 'service_request',
+          entityId: request.id,
+        }),
+    ]);
 
     res.json(await getServiceRequestById(request.id));
   },
@@ -216,6 +283,26 @@ serviceRequestsRouter.post(
       createdBy: req.appUser!.id,
       ...req.body,
     });
+
+    const customer = await getCustomerById(request.customerId);
+    await Promise.all([
+      logActivity({
+        actorUserId: req.appUser!.id,
+        action: 'QUOTATION_CREATED',
+        entityType: 'quotation',
+        entityId: quotation.id,
+        metadata: { serviceRequestId: request.id, total: quotation.total },
+      }),
+      customer &&
+        createNotification({
+          userId: customer.userId,
+          title: 'Quotation ready',
+          message: `A quotation for ${money(quotation.total)} is ready for your review.`,
+          entityType: 'service_request',
+          entityId: request.id,
+        }),
+    ]);
+
     res.status(201).json(quotation);
   },
 );
