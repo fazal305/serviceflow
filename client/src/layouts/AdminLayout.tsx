@@ -4,6 +4,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 const NAV_ITEMS = [
   { to: '/admin', label: 'Dashboard', end: true },
   { to: '/admin/service-requests', label: 'Service Requests' },
+  { to: '/admin/schedule', label: 'Schedule' },
   { to: '/admin/technicians', label: 'Technicians' },
   { to: '/admin/customers', label: 'Customers' },
 ];

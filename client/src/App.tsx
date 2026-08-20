@@ -6,13 +6,15 @@ import { LandingPage } from './pages/LandingPage';
 import { RoleRedirectPage } from './pages/RoleRedirectPage';
 import { SignInPage } from './pages/SignInPage';
 import { SignUpPage } from './pages/SignUpPage';
-import { TechnicianHomePage } from './pages/TechnicianHomePage';
 import { AdminCustomersPage } from './pages/admin/AdminCustomersPage';
 import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
+import { AdminSchedulePage } from './pages/admin/AdminSchedulePage';
 import { AdminServiceRequestsPage } from './pages/admin/AdminServiceRequestsPage';
 import { AdminTechniciansPage } from './pages/admin/AdminTechniciansPage';
 import { CustomerRequestsPage } from './pages/customer/CustomerRequestsPage';
 import { NewServiceRequestPage } from './pages/customer/NewServiceRequestPage';
+import { JobDetailPage } from './pages/technician/JobDetailPage';
+import { TechnicianHomePage } from './pages/technician/TechnicianHomePage';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { RoleGate } from './routes/RoleGate';
 
@@ -30,6 +32,7 @@ function App() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboardPage />} />
             <Route path="service-requests" element={<AdminServiceRequestsPage />} />
+            <Route path="schedule" element={<AdminSchedulePage />} />
             <Route path="technicians" element={<AdminTechniciansPage />} />
             <Route path="customers" element={<AdminCustomersPage />} />
           </Route>
@@ -44,6 +47,7 @@ function App() {
 
         <Route element={<RoleGate role="TECHNICIAN" />}>
           <Route path="/technician" element={<TechnicianHomePage />} />
+          <Route path="/technician/jobs/:id" element={<JobDetailPage />} />
         </Route>
       </Route>
     </Routes>

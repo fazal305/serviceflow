@@ -6,9 +6,9 @@ the full workflow from customer service request through technician
 assignment, scheduling, work reporting, quotation, invoicing, and payment
 tracking.
 
-> **Status: Phase 2 — customers, service requests, technicians, and
-> assignment complete.** Scheduling, jobs, quotations, and invoicing are not
-> built yet. This README will grow with each phase.
+> **Status: Phase 3 — scheduling, jobs, and the technician mobile workflow
+> complete.** Quotations, invoices, and payments are not built yet. This
+> README will grow with each phase.
 
 ## Architecture
 
@@ -213,6 +213,48 @@ still open:
   become an unhandled rejection instead of a clean error response. Express
   5 forwards these automatically.
 
+## Scheduling & the technician mobile workflow (Phase 3)
+
+```
+ASSIGNED ──(admin schedules)──▶ SCHEDULED ──(technician starts)──▶ IN_PROGRESS
+                                                                        │
+                                                          (technician completes)
+                                                                        ▼
+                                                          WAITING_FOR_APPROVAL
+                                                     (quotation/invoice — Phase 4)
+```
+
+A `jobs` row is created at scheduling time (not at assignment) and holds
+only scheduling/timing data (`scheduled_date`, `scheduled_time`,
+`started_at`, `completed_at`) — status stays solely on `service_requests`
+to avoid duplicating state across two tables. `job_notes` and `job_parts`
+capture the technician's work report as they go, which Phase 4's
+quotation will read from directly.
+
+**Technician UI is mobile-first, not a shrunk-down admin panel**: the home
+screen (`/technician`) is just today's jobs, then upcoming — no sidebar, no
+desktop chrome. Job detail (`/technician/jobs/:id`) surfaces exactly what
+Section 10 specifies: customer, problem, address (tap-to-call phone),
+scheduled time, status, notes, parts, and the actions relevant to the job's
+current status (`Start Job` → `Complete Job`, `Add Note`, `Add Part`).
+**Photo upload is intentionally not built yet** — it needs a real
+file-storage decision (Section 23 says ask before adding an external
+provider), so this phase doesn't ship a fake placeholder for it.
+
+**Admin scheduling** is inline in `/admin/service-requests` (a "Schedule"
+action appears once a request is `ASSIGNED`) plus a dedicated
+`/admin/schedule` list view — not a full calendar widget, which would be
+more UI than the data volume at this stage justifies.
+
+Two more bugs found and fixed during this phase:
+
+- **`pg` parses Postgres `date` columns into JS `Date` objects**, which
+  then serialize as full ISO timestamps instead of a plain `YYYY-MM-DD` —
+  breaking both date display formatting and round-tripping into
+  `<input type="date">`. Fixed once, at the driver level
+  (`types.setTypeParser(1082, ...)` in `server/src/db/pool.ts`), rather
+  than working around it at every call site that touches a date column.
+
 ## Database migrations
 
 Uses [`node-pg-migrate`](https://github.com/salsita/node-pg-migrate) — plain
@@ -275,7 +317,7 @@ architecture.
 - [x] **Phase 0** — Architecture, project scaffold, Netlify Function wiring
 - [x] **Phase 1** — Authentication (Clerk), `users` table + migrations, role-based authorization
 - [x] **Phase 2** — Customers, service requests, admin dashboard, technicians, assignment
-- [ ] **Phase 3** — Scheduling, jobs, technician mobile workflow
+- [x] **Phase 3** — Scheduling, jobs, technician mobile workflow, job completion
 - [ ] **Phase 4** — Quotations, invoices, payment tracking
 - [ ] **Phase 5** — Customer portal, notifications, activity history, reports
 - [ ] **Phase 6** — OpenRouter AI Service Assistant

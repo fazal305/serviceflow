@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 
 import { findOrCreateCustomerByUserId } from '../db/customers.js';
+import { scheduleJob } from '../db/jobs.js';
 import {
   assignTechnician,
   createServiceRequest,
@@ -122,6 +123,35 @@ serviceRequestsRouter.post(
       serviceRequestId: request.id,
       technicianId: technician.id,
       assignedBy: req.appUser!.id,
+    });
+
+    res.json(await getServiceRequestById(request.id));
+  },
+);
+
+const scheduleSchema = z.object({
+  scheduledDate: z.string().date(),
+  scheduledTime: z.string().trim().max(40).nullable(),
+});
+
+serviceRequestsRouter.post(
+  '/service-requests/:id/schedule',
+  requireAuthentication,
+  syncUser,
+  requireRole('ADMIN'),
+  validateBody(scheduleSchema),
+  async (req, res) => {
+    const request = await getServiceRequestById(req.params.id as string);
+    if (!request) throw new ApiError(404, 'Service request not found');
+
+    if (!canTransition(request.status, 'SCHEDULED')) {
+      throw new ApiError(409, `Cannot schedule a request in status ${request.status}`);
+    }
+
+    await scheduleJob({
+      serviceRequestId: request.id,
+      scheduledDate: req.body.scheduledDate,
+      scheduledTime: req.body.scheduledTime,
     });
 
     res.json(await getServiceRequestById(request.id));

@@ -5,6 +5,7 @@ import { useApi } from './useApi';
 export interface DashboardSummary {
   openRequests: number;
   pendingAssignment: number;
+  todaysJobs: number;
   activeTechnicians: number;
   totalCustomers: number;
   statusBreakdown: Array<{ status: string; count: number }>;

@@ -1,6 +1,13 @@
-import { Pool } from 'pg';
+import { Pool, types } from 'pg';
 
 import { env } from '../config/env.js';
+
+// Postgres OID 1082 = `date`. `pg` parses this into a JS Date by default,
+// which then serializes as a full ISO timestamp (with a timezone-dependent
+// day) instead of the plain `YYYY-MM-DD` a DATE column actually means —
+// breaking both display formatting and round-tripping into
+// `<input type="date">`. Keep it as the raw string Postgres sends.
+types.setTypeParser(1082, (value: string) => value);
 
 let pool: Pool | undefined;
 

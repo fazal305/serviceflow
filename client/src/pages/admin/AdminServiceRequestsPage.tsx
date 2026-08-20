@@ -1,5 +1,6 @@
 import { useState } from 'react';
 
+import { useScheduleRequest } from '../../api/jobs';
 import {
   useAssignTechnician,
   useServiceRequests,
@@ -27,6 +28,7 @@ const STATUS_OPTIONS: ServiceRequestStatus[] = [
 ];
 
 const ASSIGNABLE_STATUSES: ServiceRequestStatus[] = ['NEW', 'UNDER_REVIEW'];
+const SCHEDULABLE_STATUSES: ServiceRequestStatus[] = ['ASSIGNED'];
 
 export function AdminServiceRequestsPage() {
   const [statusFilter, setStatusFilter] = useState<ServiceRequestStatus | ''>('');
@@ -35,9 +37,13 @@ export function AdminServiceRequestsPage() {
   );
   const { data: technicians } = useTechnicians();
   const assignTechnician = useAssignTechnician();
+  const scheduleRequest = useScheduleRequest();
 
   const [assigningRequest, setAssigningRequest] = useState<ServiceRequest | null>(null);
   const [selectedTechnicianId, setSelectedTechnicianId] = useState('');
+  const [schedulingRequest, setSchedulingRequest] = useState<ServiceRequest | null>(null);
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
 
   const activeTechnicians = technicians?.filter((t) => t.isActive) ?? [];
 
@@ -54,6 +60,23 @@ export function AdminServiceRequestsPage() {
       technicianId: selectedTechnicianId,
     });
     setAssigningRequest(null);
+  }
+
+  function openScheduleModal(request: ServiceRequest) {
+    scheduleRequest.reset();
+    setScheduledDate(request.preferredDate ?? '');
+    setScheduledTime(request.preferredTime ?? '');
+    setSchedulingRequest(request);
+  }
+
+  async function confirmSchedule() {
+    if (!schedulingRequest || !scheduledDate) return;
+    await scheduleRequest.mutateAsync({
+      requestId: schedulingRequest.id,
+      scheduledDate,
+      scheduledTime: scheduledTime || null,
+    });
+    setSchedulingRequest(null);
   }
 
   return (
@@ -122,6 +145,15 @@ export function AdminServiceRequestsPage() {
                         Assign
                       </button>
                     )}
+                    {SCHEDULABLE_STATUSES.includes(request.status) && (
+                      <button
+                        type="button"
+                        onClick={() => openScheduleModal(request)}
+                        className="rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+                      >
+                        Schedule
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -167,6 +199,54 @@ export function AdminServiceRequestsPage() {
               className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:opacity-60"
             >
               {assignTechnician.isPending ? 'Assigning…' : 'Confirm assignment'}
+            </button>
+          </div>
+        )}
+      </Modal>
+
+      <Modal open={!!schedulingRequest} onClose={() => setSchedulingRequest(null)} title="Schedule job">
+        {schedulingRequest && (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-muted-foreground">
+              {schedulingRequest.description}
+              {schedulingRequest.technicianName && ` — assigned to ${schedulingRequest.technicianName}`}
+            </p>
+
+            <div className="grid grid-cols-2 gap-3">
+              <label className="flex flex-col gap-1.5 text-sm font-medium text-foreground">
+                Date
+                <input
+                  type="date"
+                  value={scheduledDate}
+                  onChange={(e) => setScheduledDate(e.target.value)}
+                  className={inputClass}
+                />
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm font-medium text-foreground">
+                Time
+                <input
+                  type="text"
+                  placeholder="e.g. Morning"
+                  value={scheduledTime}
+                  onChange={(e) => setScheduledTime(e.target.value)}
+                  className={inputClass}
+                />
+              </label>
+            </div>
+
+            {scheduleRequest.isError && (
+              <p role="alert" className="text-sm text-destructive">
+                {scheduleRequest.error instanceof Error ? scheduleRequest.error.message : 'Failed to schedule'}
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={confirmSchedule}
+              disabled={!scheduledDate || scheduleRequest.isPending}
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:opacity-60"
+            >
+              {scheduleRequest.isPending ? 'Scheduling…' : 'Confirm schedule'}
             </button>
           </div>
         )}
