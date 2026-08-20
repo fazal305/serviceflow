@@ -5,8 +5,10 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 
 import { env } from './config/env.js';
+import { clerkAuth } from './middleware/auth.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import { healthRouter } from './routes/health.js';
+import { meRouter } from './routes/me.js';
 
 export function createApp() {
   const app = express();
@@ -15,6 +17,7 @@ export function createApp() {
   app.use(cors({ origin: env.corsOrigin, credentials: true }));
   app.use(express.json({ limit: '2mb' }));
   app.use(morgan(env.nodeEnv === 'production' ? 'combined' : 'dev'));
+  app.use(clerkAuth);
 
   // Netlify Functions run behind a proxy that already strips the
   // `/api` prefix mapped in netlify.toml, but the local dev server (which
@@ -24,6 +27,7 @@ export function createApp() {
     '/api',
     rateLimit({ windowMs: 15 * 60 * 1000, limit: 300 }),
     healthRouter,
+    meRouter,
   );
 
   app.use(notFoundHandler);

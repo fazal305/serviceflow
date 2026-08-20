@@ -6,9 +6,9 @@ the full workflow from customer service request through technician
 assignment, scheduling, work reporting, quotation, invoicing, and payment
 tracking.
 
-> **Status: Phase 0 — architecture & project setup.** Auth, business logic,
-> and the AI assistant are not built yet. This README will grow with each
-> phase.
+> **Status: Phase 1 — authentication complete.** Business logic (service
+> requests, jobs, quotations, invoicing) is not built yet. This README will
+> grow with each phase.
 
 ## Architecture
 
@@ -74,6 +74,81 @@ serviceflow/
 └── netlify.toml              # Build config, function bundling, redirects
 ```
 
+## Authentication & authorization (Phase 1)
+
+**Identity vs. role are two different systems, deliberately:**
+
+- **Clerk** owns identity — sign-up, sign-in, sessions, password resets, MFA.
+  The frontend never talks to our database for auth; it talks to Clerk
+  directly, and every backend request carries a Clerk session token.
+- **Our own `users` table** (Postgres) owns *role* — `ADMIN`, `TECHNICIAN`,
+  or `CUSTOMER` — and is the source of truth every other table's foreign
+  keys will point to. Clerk's token proves *who* someone is; our database
+  decides *what they're allowed to do*.
+
+**How the two get linked — just-in-time sync, not a webhook:**
+On a user's first authenticated request, `syncUser` middleware
+([server/src/middleware/auth.ts](server/src/middleware/auth.ts)) checks for
+a `users` row matching their Clerk ID. If none exists, it creates one
+defaulting to `CUSTOMER` — the only role public sign-up can ever produce —
+and writes that role back to Clerk's `publicMetadata` for consistency. This
+avoids needing a Clerk webhook + public tunnel for local development while
+still being fully real: it's a genuine DB write and Clerk API call, not a
+stub.
+
+**Bootstrapping ADMIN/TECHNICIAN accounts:** nobody can self-serve into a
+higher role than `CUSTOMER`. In production, an admin-only endpoint (added in
+Phase 2) creates technician accounts. The very first admin has to be
+created directly — see `npm run seed:users` below.
+
+**Auth flow:**
+
+```
+Browser                          Backend                      Clerk
+  │  sign in via <SignIn/>          │                            │
+  ├─────────────────────────────────┼───────────────────────────>│
+  │  ← session token                │                            │
+  │                                 │                            │
+  │  GET /api/me                    │                            │
+  │  Authorization: Bearer <token> ─>│                            │
+  │                                 │  clerkMiddleware verifies  │
+  │                                 │  token signature ─────────>│
+  │                                 │  syncUser: find/create      │
+  │                                 │  row in `users` table       │
+  │  ← { id, role, email, ... } ────┤                            │
+```
+
+### Test accounts (development only)
+
+Seeded via `npm run seed:users --workspace server` (requires real
+`DATABASE_URL` + `CLERK_SECRET_KEY` in `server/.env`). Emails use Clerk's
+documented [test-email pattern](https://clerk.com/docs/testing/test-emails-and-phones)
+(`+clerk_test@`), so sign-in's email-verification step accepts the fixed
+code `424242` instead of sending real mail — these accounts don't need a
+real inbox.
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | `admin+clerk_test@serviceflow.dev` | `ServiceFlow#Dev1` |
+| Technician | `technician+clerk_test@serviceflow.dev` | `ServiceFlow#Dev1` |
+| Customer | `customer+clerk_test@serviceflow.dev` | `ServiceFlow#Dev1` |
+
+**These are obviously-fake development credentials, not real business
+data** — they only exist on your own dev Clerk instance and dev database.
+Never seed these (or any `+clerk_test` accounts) against a production Clerk
+instance.
+
+## Database migrations
+
+Uses [`node-pg-migrate`](https://github.com/salsita/node-pg-migrate) — plain
+up/down migrations, no ORM.
+
+```bash
+npm run migrate:up --workspace server     # apply pending migrations
+npm run migrate:down --workspace server   # roll back the last migration
+npm run migrate:create --workspace server -- <name>   # scaffold a new migration
+```
+
 ## Local development
 
 Requires Node.js 20+.
@@ -99,9 +174,11 @@ every variable, which file it belongs in (`client/.env` vs `server/.env`),
 and where to get each value. No real credentials are committed; `.env`
 files are gitignored.
 
-Phase 0 requires **no environment variables** — the health-check page works
-with zero configuration. Database, auth, and AI keys are introduced in
-later phases as each is actually wired up.
+As of Phase 1, `server/.env` needs a real `DATABASE_URL`, `CLERK_SECRET_KEY`,
+and `CLERK_PUBLISHABLE_KEY`; `client/.env` needs a real
+`VITE_CLERK_PUBLISHABLE_KEY` (same publishable key as the server — it's safe
+for the browser). `OPENROUTER_API_KEY` and the Supabase Realtime variables
+aren't needed until Phase 6 and Phase 7 respectively.
 
 ## Build
 
@@ -121,7 +198,7 @@ architecture.
 ## Roadmap
 
 - [x] **Phase 0** — Architecture, project scaffold, Netlify Function wiring
-- [ ] **Phase 1** — Authentication (Clerk), role-based authorization
+- [x] **Phase 1** — Authentication (Clerk), `users` table + migrations, role-based authorization
 - [ ] **Phase 2** — Customers, service requests, admin dashboard, technicians, assignment
 - [ ] **Phase 3** — Scheduling, jobs, technician mobile workflow
 - [ ] **Phase 4** — Quotations, invoices, payment tracking
