@@ -6,13 +6,15 @@ the full workflow from customer service request through technician
 assignment, scheduling, work reporting, quotation, invoicing, and payment
 tracking.
 
+**Live demo:** [serviceflow-app.netlify.app](https://serviceflow-app.netlify.app)
+
 > **Status: Phase 7 — realtime updates are live.** The full business loop
 > (request → assign → schedule → job → quotation → invoice → payment →
 > completed) works end-to-end with notifications, an audit trail, an
 > optional AI triage step, and live-pushed updates — no manual refresh
 > needed to see a new notification, status change, or dashboard number.
-> Production security review and deployment are not done yet. This README
-> will grow with each phase.
+> Deployed to Netlify. Production security review is not done yet. This
+> README will grow with each phase.
 
 ## Architecture
 
@@ -499,11 +501,20 @@ npm run build:server   # type-checks + compiles server/src to server/dist (local
 
 ## Deployment (Netlify)
 
-Not yet configured — this happens once the app has enough functionality to
-be worth deploying. `netlify.toml` is already in place so deployment is a
-matter of connecting the repository in the Netlify dashboard and setting
-the environment variables from `.env.example` there, not retrofitting
-architecture.
+**Live:** [serviceflow-app.netlify.app](https://serviceflow-app.netlify.app)
+
+Deployed via `netlify.toml` — static frontend build (`client/dist`) plus
+the Express API wrapped as a Netlify Function (`netlify/functions/api`),
+with `/api/*` redirected to the function and environment variables set
+from `.env.example` in the Netlify dashboard.
+
+One pitfall worth documenting: `netlify deploy --build` compiles the
+client **locally**, not on Netlify's servers. Any absolute `VITE_API_URL`
+left set in `client/.env` gets baked into the production bundle as a
+literal `localhost` URL, which the browser then blocks as mixed content.
+Leave `VITE_API_URL` unset — the app already falls back to a relative
+`/api` path that works correctly in both dev (via Vite's proxy) and
+production.
 
 ## Roadmap
 
