@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://serviceflow-app.netlify.app/sitemap.xml
