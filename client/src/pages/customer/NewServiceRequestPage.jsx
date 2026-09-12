@@ -16,6 +16,7 @@ export function NewServiceRequestPage() {
   const [categoryId, setCategoryId] = useState('');
   const [priority, setPriority] = useState('MEDIUM');
   const [aiUnavailable, setAiUnavailable] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   async function handleGetSuggestions() {
     setAiUnavailable(false);
@@ -44,6 +45,10 @@ export function NewServiceRequestPage() {
       contactPhone: String(form.get('contactPhone')) || null,
     });
 
+    // Briefly confirm success before leaving so the submission doesn't feel
+    // like it silently vanished.
+    setSubmitted(true);
+    await new Promise((resolve) => setTimeout(resolve, 900));
     navigate('/customer');
   }
 
@@ -172,10 +177,11 @@ export function NewServiceRequestPage() {
             {createRequest.error instanceof Error ? createRequest.error.message : 'Failed to submit request'}
           </p>
         )}
+        {submitted && <p className="text-sm text-success">Request submitted — taking you to your requests…</p>}
 
         <button
           type="submit"
-          disabled={createRequest.isPending}
+          disabled={createRequest.isPending || submitted}
           className="self-start rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:opacity-60"
         >
           {createRequest.isPending ? 'Submitting…' : 'Submit request'}

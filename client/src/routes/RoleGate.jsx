@@ -14,7 +14,9 @@ export function RoleGate({ role }) {
   // about-to-be-confirmed admin straight back out to /app on every cold load.
   if (isPending) return <LoadingState label="Checking your account…" />;
   if (isError) return <ErrorState message="Couldn't verify your account." onRetry={() => refetch()} />;
-  if (me.role !== role) return <Navigate to="/app" replace />;
+  if (me.role !== role) {
+    return <Navigate to="/app" replace state={{ accessDenied: true }} />;
+  }
 
   return <Outlet />;
 }
