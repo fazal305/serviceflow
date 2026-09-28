@@ -1,11 +1,15 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams } from "react-router-dom";
 
-import { useRequestInvoice } from '../../api/invoices';
-import { useApproveQuotation, useRejectQuotation, useRequestQuotation } from '../../api/quotations';
-import { useServiceRequest } from '../../api/serviceRequests';
-import { ErrorState } from '../../components/ErrorState';
-import { LoadingState } from '../../components/LoadingState';
-import { StatusBadge } from '../../components/StatusBadge';
+import { useRequestInvoice } from "../../api/invoices";
+import {
+  useApproveQuotation,
+  useRejectQuotation,
+  useRequestQuotation,
+} from "../../api/quotations";
+import { useServiceRequest } from "../../api/serviceRequests";
+import { ErrorState } from "../../components/ErrorState";
+import { LoadingState } from "../../components/LoadingState";
+import { StatusBadge } from "../../components/StatusBadge";
 
 function money(value) {
   return `$${Number(value).toFixed(2)}`;
@@ -16,11 +20,17 @@ export function CustomerRequestDetailPage() {
   const { data: request, isPending, isError, refetch } = useServiceRequest(id);
   const { data: quotation } = useRequestQuotation(id);
   const { data: invoice } = useRequestInvoice(id);
-  const approveQuotation = useApproveQuotation(id ?? '');
-  const rejectQuotation = useRejectQuotation(id ?? '');
+  const approveQuotation = useApproveQuotation(id ?? "");
+  const rejectQuotation = useRejectQuotation(id ?? "");
 
   if (isPending) return <LoadingState label="Loading request…" />;
-  if (isError || !request) return <ErrorState message="Couldn't load this request." onRetry={() => refetch()} />;
+  if (isError || !request)
+    return (
+      <ErrorState
+        message="Couldn't load this request."
+        onRetry={() => refetch()}
+      />
+    );
 
   return (
     <div className="flex flex-col gap-6">
@@ -32,8 +42,12 @@ export function CustomerRequestDetailPage() {
       </div>
 
       <section className="rounded-lg border border-border bg-card p-5">
-        <p className="text-sm font-medium text-foreground">{request.serviceCategoryName ?? 'General request'}</p>
-        <p className="mt-1 text-sm text-muted-foreground">{request.description}</p>
+        <p className="text-sm font-medium text-foreground">
+          {request.serviceCategoryName ?? "General request"}
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {request.description}
+        </p>
         <p className="mt-3 text-xs text-muted-foreground">
           {request.address}
           {request.technicianName && ` · Technician: ${request.technicianName}`}
@@ -77,9 +91,13 @@ export function CustomerRequestDetailPage() {
             </div>
           </div>
 
-          {quotation.notes && <p className="mt-2 text-sm text-muted-foreground">{quotation.notes}</p>}
+          {quotation.notes && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              {quotation.notes}
+            </p>
+          )}
 
-          {quotation.status === 'PENDING' && (
+          {quotation.status === "PENDING" && (
             <div className="mt-4 flex flex-col gap-2">
               {(approveQuotation.isError || rejectQuotation.isError) && (
                 <p role="alert" className="text-sm text-destructive">
@@ -90,27 +108,33 @@ export function CustomerRequestDetailPage() {
                 <button
                   type="button"
                   onClick={() => approveQuotation.mutate(quotation.id)}
-                  disabled={approveQuotation.isPending || rejectQuotation.isPending}
+                  disabled={
+                    approveQuotation.isPending || rejectQuotation.isPending
+                  }
                   className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:opacity-60"
                 >
-                  {approveQuotation.isPending ? 'Approving…' : 'Approve'}
+                  {approveQuotation.isPending ? "Approving…" : "Approve"}
                 </button>
                 <button
                   type="button"
                   onClick={() => rejectQuotation.mutate(quotation.id)}
-                  disabled={approveQuotation.isPending || rejectQuotation.isPending}
+                  disabled={
+                    approveQuotation.isPending || rejectQuotation.isPending
+                  }
                   className="flex-1 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-60"
                 >
-                  {rejectQuotation.isPending ? 'Rejecting…' : 'Reject'}
+                  {rejectQuotation.isPending ? "Rejecting…" : "Reject"}
                 </button>
               </div>
             </div>
           )}
 
-          {quotation.status === 'APPROVED' && (
-            <p className="mt-3 text-sm text-success">You approved this quotation.</p>
+          {quotation.status === "APPROVED" && (
+            <p className="mt-3 text-sm text-success">
+              You approved this quotation.
+            </p>
           )}
-          {quotation.status === 'REJECTED' && (
+          {quotation.status === "REJECTED" && (
             <p className="mt-3 text-sm text-muted-foreground">
               You rejected this quotation. We'll follow up with a revised one.
             </p>
@@ -121,17 +145,21 @@ export function CustomerRequestDetailPage() {
       {invoice && (
         <section className="rounded-lg border border-border bg-card p-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-foreground">Invoice {invoice.invoiceNumber}</h2>
+            <h2 className="text-sm font-semibold text-foreground">
+              Invoice {invoice.invoiceNumber}
+            </h2>
             <span
               className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                invoice.status === 'PAID'
-                  ? 'bg-success/15 text-success'
+                invoice.status === "PAID"
+                  ? "bg-success/15 text-success"
                   : invoice.isOverdue
-                    ? 'bg-destructive/15 text-destructive'
-                    : 'bg-warning/15 text-warning'
+                    ? "bg-destructive/15 text-destructive"
+                    : "bg-warning/15 text-warning"
               }`}
             >
-              {invoice.isOverdue && invoice.status !== 'PAID' ? 'OVERDUE' : invoice.status.replace('_', ' ')}
+              {invoice.isOverdue && invoice.status !== "PAID"
+                ? "OVERDUE"
+                : invoice.status.replace("_", " ")}
             </span>
           </div>
           <div className="mt-3 text-sm">

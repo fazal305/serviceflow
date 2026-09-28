@@ -1,4 +1,4 @@
-import { getPool } from './pool.js';
+import { getPool } from "./pool.js";
 
 function toTechnician(row) {
   return {
@@ -37,15 +37,18 @@ export async function listActiveTechnicians() {
 }
 
 export async function getTechnicianById(id) {
-  const { rows } = await getPool().query(`${SELECT_TECHNICIAN} WHERE t.id = $1`, [id]);
+  const { rows } = await getPool().query(
+    `${SELECT_TECHNICIAN} WHERE t.id = $1`,
+    [id],
+  );
   return rows[0] ? toTechnician(rows[0]) : null;
 }
 
 export async function createTechnicianProfile(params) {
-  await getPool().query('INSERT INTO technicians (user_id, service_category_id) VALUES ($1, $2)', [
-    params.userId,
-    params.serviceCategoryId,
-  ]);
+  await getPool().query(
+    "INSERT INTO technicians (user_id, service_category_id) VALUES ($1, $2)",
+    [params.userId, params.serviceCategoryId],
+  );
   const technician = await getPool().query(
     `${SELECT_TECHNICIAN} WHERE t.user_id = $1`,
     [params.userId],

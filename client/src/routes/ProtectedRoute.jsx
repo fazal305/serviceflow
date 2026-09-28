@@ -1,7 +1,7 @@
-import { useAuth } from '@clerk/clerk-react';
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from "@clerk/clerk-react";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 
-import { useRealtimeSync } from '../hooks/useRealtimeSync';
+import { useRealtimeSync } from "../hooks/useRealtimeSync";
 
 export function ProtectedRoute() {
   const { isLoaded, isSignedIn } = useAuth();
@@ -25,7 +25,13 @@ export function ProtectedRoute() {
     // valid session (as opposed to landing on /sign-in directly), so the
     // sign-in page can tell the user their session expired rather than
     // silently showing a plain sign-in form.
-    return <Navigate to="/sign-in" replace state={{ sessionExpired: true, from: location.pathname }} />;
+    return (
+      <Navigate
+        to="/sign-in"
+        replace
+        state={{ sessionExpired: true, from: location.pathname }}
+      />
+    );
   }
 
   return <Outlet />;

@@ -1,28 +1,36 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
-import { useCustomers } from '../../api/customers';
-import { EmptyState } from '../../components/EmptyState';
-import { ErrorState } from '../../components/ErrorState';
-import { inputClass } from '../../components/Field';
-import { LoadingState } from '../../components/LoadingState';
+import { useCustomers } from "../../api/customers";
+import { EmptyState } from "../../components/EmptyState";
+import { ErrorState } from "../../components/ErrorState";
+import { inputClass } from "../../components/Field";
+import { LoadingState } from "../../components/LoadingState";
 
 export function AdminCustomersPage() {
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     const timeout = setTimeout(() => setSearch(searchInput.trim()), 300);
     return () => clearTimeout(timeout);
   }, [searchInput]);
 
-  const { data: customers, isPending, isError, refetch } = useCustomers(search || undefined);
+  const {
+    data: customers,
+    isPending,
+    isError,
+    refetch,
+  } = useCustomers(search || undefined);
 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">Customers</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          Customers
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Customer accounts are created via sign-up — this is a read-only directory.
+          Customer accounts are created via sign-up — this is a read-only
+          directory.
         </p>
       </div>
 
@@ -36,12 +44,21 @@ export function AdminCustomersPage() {
       />
 
       {isPending && <LoadingState label="Loading customers…" />}
-      {isError && <ErrorState message="Couldn't load customers." onRetry={() => refetch()} />}
+      {isError && (
+        <ErrorState
+          message="Couldn't load customers."
+          onRetry={() => refetch()}
+        />
+      )}
 
       {customers && customers.length === 0 && (
         <EmptyState
           title="No customers found"
-          description={search ? 'Try a different search term.' : 'Customers appear here once they sign up.'}
+          description={
+            search
+              ? "Try a different search term."
+              : "Customers appear here once they sign up."
+          }
         />
       )}
 
@@ -58,11 +75,22 @@ export function AdminCustomersPage() {
             </thead>
             <tbody>
               {customers.map((customer) => (
-                <tr key={customer.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-2.5 text-foreground">{customer.fullName ?? '—'}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{customer.email}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{customer.phone ?? '—'}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{customer.address ?? '—'}</td>
+                <tr
+                  key={customer.id}
+                  className="border-b border-border last:border-0"
+                >
+                  <td className="px-4 py-2.5 text-foreground">
+                    {customer.fullName ?? "—"}
+                  </td>
+                  <td className="px-4 py-2.5 text-muted-foreground">
+                    {customer.email}
+                  </td>
+                  <td className="px-4 py-2.5 text-muted-foreground">
+                    {customer.phone ?? "—"}
+                  </td>
+                  <td className="px-4 py-2.5 text-muted-foreground">
+                    {customer.address ?? "—"}
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -6,7 +6,8 @@
  * one of these tokens (via Tailwind theme below), never a raw hex value.
  */
 @theme {
-  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans:
+    "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --color-primary: #0f172a;
   --color-primary-foreground: #ffffff;

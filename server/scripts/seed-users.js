@@ -10,13 +10,13 @@
  *
  * Requires server/.env to have real CLERK_SECRET_KEY and DATABASE_URL.
  */
-import { clerkClient } from '@clerk/express';
+import { clerkClient } from "@clerk/express";
 
-import { env } from '../src/config/env.js';
-import { getPool } from '../src/db/pool.js';
+import { env } from "../src/config/env.js";
+import { getPool } from "../src/db/pool.js";
 
 // Obviously-a-placeholder credentials, dev-only — never used in production.
-const DEV_PASSWORD = 'ServiceFlow#Dev1';
+const DEV_PASSWORD = "ServiceFlow#Dev1";
 
 // The `+clerk_test` local-part is Clerk's documented test-email pattern:
 // https://clerk.com/docs/testing/test-emails-and-phones — Clerk never sends
@@ -24,13 +24,30 @@ const DEV_PASSWORD = 'ServiceFlow#Dev1';
 // email-verification step, which is what makes these accounts usable
 // without access to a real inbox for a domain we don't own.
 const SEED_ACCOUNTS = [
-  { role: 'ADMIN', email: 'admin+clerk_test@serviceflow.dev', firstName: 'Dev', lastName: 'Admin' },
-  { role: 'TECHNICIAN', email: 'technician+clerk_test@serviceflow.dev', firstName: 'Dev', lastName: 'Technician' },
-  { role: 'CUSTOMER', email: 'customer+clerk_test@serviceflow.dev', firstName: 'Dev', lastName: 'Customer' },
+  {
+    role: "ADMIN",
+    email: "admin+clerk_test@serviceflow.dev",
+    firstName: "Dev",
+    lastName: "Admin",
+  },
+  {
+    role: "TECHNICIAN",
+    email: "technician+clerk_test@serviceflow.dev",
+    firstName: "Dev",
+    lastName: "Technician",
+  },
+  {
+    role: "CUSTOMER",
+    email: "customer+clerk_test@serviceflow.dev",
+    firstName: "Dev",
+    lastName: "Customer",
+  },
 ];
 
 async function findExistingClerkUser(email) {
-  const { data } = await clerkClient.users.getUserList({ emailAddress: [email] });
+  const { data } = await clerkClient.users.getUserList({
+    emailAddress: [email],
+  });
   return data[0] ?? null;
 }
 
@@ -79,7 +96,9 @@ async function main() {
       await clerkClient.users.updateUserMetadata(clerkUser.id, {
         publicMetadata: { role: account.role },
       });
-      console.log(`Clerk user already existed for ${account.role}: ${account.email} (metadata refreshed)`);
+      console.log(
+        `Clerk user already existed for ${account.role}: ${account.email} (metadata refreshed)`,
+      );
     }
 
     const userId = await upsertDbUser(
@@ -89,12 +108,16 @@ async function main() {
       `${account.firstName} ${account.lastName}`,
     );
 
-    if (account.role === 'TECHNICIAN') {
+    if (account.role === "TECHNICIAN") {
       await ensureTechnicianProfile(userId);
     }
   }
 
-  console.log('\nSeeded development test accounts (password for all: ' + DEV_PASSWORD + ')');
+  console.log(
+    "\nSeeded development test accounts (password for all: " +
+      DEV_PASSWORD +
+      ")",
+  );
   await getPool().end();
 }
 

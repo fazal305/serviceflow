@@ -1,16 +1,20 @@
-import { useState } from 'react';
+import { useState } from "react";
 
-import { inputClass } from './Field';
+import { inputClass } from "./Field";
 
 function emptyItem() {
-  return { type: 'PART', description: '', quantity: 1, unitPrice: 0 };
+  return { type: "PART", description: "", quantity: 1, unitPrice: 0 };
 }
 
 export function LineItemsEditor({ items, onChange }) {
-  const [localItems, setLocalItems] = useState(items.length ? items : [emptyItem()]);
+  const [localItems, setLocalItems] = useState(
+    items.length ? items : [emptyItem()],
+  );
 
   function update(index, patch) {
-    const next = localItems.map((item, i) => (i === index ? { ...item, ...patch } : item));
+    const next = localItems.map((item, i) =>
+      i === index ? { ...item, ...patch } : item,
+    );
     setLocalItems(next);
     onChange(next);
   }

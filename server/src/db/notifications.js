@@ -1,5 +1,5 @@
-import { getPool } from './pool.js';
-import { broadcastToUser } from '../services/realtime.js';
+import { getPool } from "./pool.js";
+import { broadcastToUser } from "../services/realtime.js";
 
 function toNotification(row) {
   return {
@@ -17,22 +17,32 @@ export async function createNotification(params) {
   await getPool().query(
     `INSERT INTO notifications (user_id, title, message, entity_type, entity_id)
      VALUES ($1, $2, $3, $4, $5)`,
-    [params.userId, params.title, params.message, params.entityType ?? null, params.entityId ?? null],
+    [
+      params.userId,
+      params.title,
+      params.message,
+      params.entityType ?? null,
+      params.entityId ?? null,
+    ],
   );
 
   // Fire-and-forget: a slow/failed realtime broadcast must never delay or
   // fail the request that triggered this notification.
-  void broadcastToUser(params.userId, 'notifications');
+  void broadcastToUser(params.userId, "notifications");
 }
 
 export async function notifyAdmins(params) {
-  const { rows } = await getPool().query("SELECT id FROM users WHERE role = 'ADMIN'");
-  await Promise.all(rows.map((r) => createNotification({ userId: r.id, ...params })));
+  const { rows } = await getPool().query(
+    "SELECT id FROM users WHERE role = 'ADMIN'",
+  );
+  await Promise.all(
+    rows.map((r) => createNotification({ userId: r.id, ...params })),
+  );
 }
 
 export async function listNotificationsForUser(userId) {
   const { rows } = await getPool().query(
-    'SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 30',
+    "SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 30",
     [userId],
   );
   return rows.map(toNotification);
@@ -40,18 +50,22 @@ export async function listNotificationsForUser(userId) {
 
 export async function unreadNotificationCount(userId) {
   const { rows } = await getPool().query(
-    'SELECT count(*) FROM notifications WHERE user_id = $1 AND is_read = false',
+    "SELECT count(*) FROM notifications WHERE user_id = $1 AND is_read = false",
     [userId],
   );
   return Number(rows[0].count);
 }
 
 export async function markNotificationRead(id, userId) {
-  await getPool().query('UPDATE notifications SET is_read = true WHERE id = $1 AND user_id = $2', [id, userId]);
+  await getPool().query(
+    "UPDATE notifications SET is_read = true WHERE id = $1 AND user_id = $2",
+    [id, userId],
+  );
 }
 
 export async function markAllNotificationsRead(userId) {
-  await getPool().query('UPDATE notifications SET is_read = true WHERE user_id = $1 AND is_read = false', [
-    userId,
-  ]);
+  await getPool().query(
+    "UPDATE notifications SET is_read = true WHERE user_id = $1 AND is_read = false",
+    [userId],
+  );
 }

@@ -1,25 +1,33 @@
 export const shorthands = undefined;
 
 export async function up(pgm) {
-  pgm.createType('request_status', [
-    'NEW',
-    'UNDER_REVIEW',
-    'ASSIGNED',
-    'SCHEDULED',
-    'IN_PROGRESS',
-    'WAITING_FOR_APPROVAL',
-    'QUOTATION_APPROVED',
-    'COMPLETED',
-    'CANCELLED',
+  pgm.createType("request_status", [
+    "NEW",
+    "UNDER_REVIEW",
+    "ASSIGNED",
+    "SCHEDULED",
+    "IN_PROGRESS",
+    "WAITING_FOR_APPROVAL",
+    "QUOTATION_APPROVED",
+    "COMPLETED",
+    "CANCELLED",
   ]);
-  pgm.createType('request_priority', ['LOW', 'MEDIUM', 'HIGH']);
+  pgm.createType("request_priority", ["LOW", "MEDIUM", "HIGH"]);
 
-  pgm.createTable('service_categories', {
-    id: { type: 'uuid', primaryKey: true, default: pgm.func('gen_random_uuid()') },
-    name: { type: 'text', notNull: true, unique: true },
-    slug: { type: 'text', notNull: true, unique: true },
-    description: { type: 'text' },
-    created_at: { type: 'timestamptz', notNull: true, default: pgm.func('now()') },
+  pgm.createTable("service_categories", {
+    id: {
+      type: "uuid",
+      primaryKey: true,
+      default: pgm.func("gen_random_uuid()"),
+    },
+    name: { type: "text", notNull: true, unique: true },
+    slug: { type: "text", notNull: true, unique: true },
+    description: { type: "text" },
+    created_at: {
+      type: "timestamptz",
+      notNull: true,
+      default: pgm.func("now()"),
+    },
   });
 
   pgm.sql(`
@@ -33,75 +41,142 @@ export async function up(pgm) {
       ('General Maintenance', 'general-maintenance', 'Other maintenance and repair work')
   `);
 
-  pgm.createTable('customers', {
-    id: { type: 'uuid', primaryKey: true, default: pgm.func('gen_random_uuid()') },
+  pgm.createTable("customers", {
+    id: {
+      type: "uuid",
+      primaryKey: true,
+      default: pgm.func("gen_random_uuid()"),
+    },
     user_id: {
-      type: 'uuid',
+      type: "uuid",
       notNull: true,
       unique: true,
-      references: 'users',
-      onDelete: 'CASCADE',
+      references: "users",
+      onDelete: "CASCADE",
     },
-    address: { type: 'text' },
-    created_at: { type: 'timestamptz', notNull: true, default: pgm.func('now()') },
-    updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('now()') },
+    address: { type: "text" },
+    created_at: {
+      type: "timestamptz",
+      notNull: true,
+      default: pgm.func("now()"),
+    },
+    updated_at: {
+      type: "timestamptz",
+      notNull: true,
+      default: pgm.func("now()"),
+    },
   });
 
-  pgm.createTable('technicians', {
-    id: { type: 'uuid', primaryKey: true, default: pgm.func('gen_random_uuid()') },
+  pgm.createTable("technicians", {
+    id: {
+      type: "uuid",
+      primaryKey: true,
+      default: pgm.func("gen_random_uuid()"),
+    },
     user_id: {
-      type: 'uuid',
+      type: "uuid",
       notNull: true,
       unique: true,
-      references: 'users',
-      onDelete: 'CASCADE',
+      references: "users",
+      onDelete: "CASCADE",
     },
-    service_category_id: { type: 'uuid', references: 'service_categories', onDelete: 'SET NULL' },
-    is_active: { type: 'boolean', notNull: true, default: true },
-    created_at: { type: 'timestamptz', notNull: true, default: pgm.func('now()') },
-    updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('now()') },
+    service_category_id: {
+      type: "uuid",
+      references: "service_categories",
+      onDelete: "SET NULL",
+    },
+    is_active: { type: "boolean", notNull: true, default: true },
+    created_at: {
+      type: "timestamptz",
+      notNull: true,
+      default: pgm.func("now()"),
+    },
+    updated_at: {
+      type: "timestamptz",
+      notNull: true,
+      default: pgm.func("now()"),
+    },
   });
 
-  pgm.createTable('service_requests', {
-    id: { type: 'uuid', primaryKey: true, default: pgm.func('gen_random_uuid()') },
-    customer_id: { type: 'uuid', notNull: true, references: 'customers', onDelete: 'CASCADE' },
-    service_category_id: { type: 'uuid', references: 'service_categories', onDelete: 'SET NULL' },
-    description: { type: 'text', notNull: true },
-    status: { type: 'request_status', notNull: true, default: 'NEW' },
-    priority: { type: 'request_priority', notNull: true, default: 'MEDIUM' },
-    preferred_date: { type: 'date' },
-    preferred_time: { type: 'text' },
-    address: { type: 'text', notNull: true },
-    contact_phone: { type: 'text' },
-    created_at: { type: 'timestamptz', notNull: true, default: pgm.func('now()') },
-    updated_at: { type: 'timestamptz', notNull: true, default: pgm.func('now()') },
+  pgm.createTable("service_requests", {
+    id: {
+      type: "uuid",
+      primaryKey: true,
+      default: pgm.func("gen_random_uuid()"),
+    },
+    customer_id: {
+      type: "uuid",
+      notNull: true,
+      references: "customers",
+      onDelete: "CASCADE",
+    },
+    service_category_id: {
+      type: "uuid",
+      references: "service_categories",
+      onDelete: "SET NULL",
+    },
+    description: { type: "text", notNull: true },
+    status: { type: "request_status", notNull: true, default: "NEW" },
+    priority: { type: "request_priority", notNull: true, default: "MEDIUM" },
+    preferred_date: { type: "date" },
+    preferred_time: { type: "text" },
+    address: { type: "text", notNull: true },
+    contact_phone: { type: "text" },
+    created_at: {
+      type: "timestamptz",
+      notNull: true,
+      default: pgm.func("now()"),
+    },
+    updated_at: {
+      type: "timestamptz",
+      notNull: true,
+      default: pgm.func("now()"),
+    },
   });
-  pgm.createIndex('service_requests', 'status');
-  pgm.createIndex('service_requests', 'customer_id');
+  pgm.createIndex("service_requests", "status");
+  pgm.createIndex("service_requests", "customer_id");
 
-  pgm.createTable('assignments', {
-    id: { type: 'uuid', primaryKey: true, default: pgm.func('gen_random_uuid()') },
+  pgm.createTable("assignments", {
+    id: {
+      type: "uuid",
+      primaryKey: true,
+      default: pgm.func("gen_random_uuid()"),
+    },
     service_request_id: {
-      type: 'uuid',
+      type: "uuid",
       notNull: true,
       unique: true,
-      references: 'service_requests',
-      onDelete: 'CASCADE',
+      references: "service_requests",
+      onDelete: "CASCADE",
     },
-    technician_id: { type: 'uuid', notNull: true, references: 'technicians', onDelete: 'RESTRICT' },
-    assigned_by: { type: 'uuid', notNull: true, references: 'users', onDelete: 'RESTRICT' },
-    assigned_at: { type: 'timestamptz', notNull: true, default: pgm.func('now()') },
-    notes: { type: 'text' },
+    technician_id: {
+      type: "uuid",
+      notNull: true,
+      references: "technicians",
+      onDelete: "RESTRICT",
+    },
+    assigned_by: {
+      type: "uuid",
+      notNull: true,
+      references: "users",
+      onDelete: "RESTRICT",
+    },
+    assigned_at: {
+      type: "timestamptz",
+      notNull: true,
+      default: pgm.func("now()"),
+    },
+    notes: { type: "text" },
   });
-  pgm.createIndex('assignments', 'technician_id');
+  pgm.createIndex("assignments", "technician_id");
 }
 
 export async function down(pgm) {
-  pgm.dropTable('assignments');
-  pgm.dropTable('service_requests');
-  pgm.dropTable('technicians');
-  pgm.dropTable('customers');
-  pgm.dropTable('service_categories');
-  pgm.dropType('request_priority');
-  pgm.dropType('request_status');
+  pgm.dropTable("assignments");
+  pgm.dropTable("service_requests");
+  pgm.dropTable("technicians");
+  pgm.dropTable("customers");
+  pgm.dropTable("service_categories");
+  pgm.dropType("request_priority");
+  pgm.dropType("request_status");
 }

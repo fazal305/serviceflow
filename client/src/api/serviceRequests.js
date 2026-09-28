@@ -1,24 +1,25 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { useApi } from './useApi';
+import { useApi } from "./useApi";
 
 export function useServiceRequests(filters) {
   const api = useApi();
   const params = new URLSearchParams();
-  if (filters?.status) params.set('status', filters.status);
-  if (filters?.serviceCategoryId) params.set('serviceCategoryId', filters.serviceCategoryId);
+  if (filters?.status) params.set("status", filters.status);
+  if (filters?.serviceCategoryId)
+    params.set("serviceCategoryId", filters.serviceCategoryId);
   const qs = params.toString();
 
   return useQuery({
-    queryKey: ['service-requests', filters ?? {}],
-    queryFn: () => api(`/service-requests${qs ? `?${qs}` : ''}`),
+    queryKey: ["service-requests", filters ?? {}],
+    queryFn: () => api(`/service-requests${qs ? `?${qs}` : ""}`),
   });
 }
 
 export function useServiceRequest(id) {
   const api = useApi();
   return useQuery({
-    queryKey: ['service-requests', id],
+    queryKey: ["service-requests", id],
     queryFn: () => api(`/service-requests/${id}`),
     enabled: !!id,
   });
@@ -30,12 +31,12 @@ export function useCreateServiceRequest() {
 
   return useMutation({
     mutationFn: (input) =>
-      api('/service-requests', {
-        method: 'POST',
+      api("/service-requests", {
+        method: "POST",
         body: JSON.stringify(input),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['service-requests'] });
+      queryClient.invalidateQueries({ queryKey: ["service-requests"] });
     },
   });
 }
@@ -47,12 +48,12 @@ export function useAssignTechnician() {
   return useMutation({
     mutationFn: ({ requestId, technicianId }) =>
       api(`/service-requests/${requestId}/assign`, {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({ technicianId }),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['service-requests'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
+      queryClient.invalidateQueries({ queryKey: ["service-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
     },
   });
 }

@@ -1,4 +1,4 @@
-import { getPool } from './pool.js';
+import { getPool } from "./pool.js";
 
 function toServiceRequest(row) {
   return {
@@ -56,12 +56,15 @@ export async function createServiceRequest(input) {
     ],
   );
   const created = await getServiceRequestById(rows[0].id);
-  if (!created) throw new Error('Failed to load service request after creation');
+  if (!created)
+    throw new Error("Failed to load service request after creation");
   return created;
 }
 
 export async function getServiceRequestById(id) {
-  const { rows } = await getPool().query(`${SELECT_REQUEST} WHERE sr.id = $1`, [id]);
+  const { rows } = await getPool().query(`${SELECT_REQUEST} WHERE sr.id = $1`, [
+    id,
+  ]);
   return rows[0] ? toServiceRequest(rows[0]) : null;
 }
 
@@ -85,28 +88,28 @@ export async function listServiceRequestsForAdmin(filters) {
 }
 
 export async function updateServiceRequestStatus(id, status) {
-  await getPool().query('UPDATE service_requests SET status = $1, updated_at = now() WHERE id = $2', [
-    status,
-    id,
-  ]);
+  await getPool().query(
+    "UPDATE service_requests SET status = $1, updated_at = now() WHERE id = $2",
+    [status, id],
+  );
 }
 
 export async function assignTechnician(params) {
   const pool = getPool();
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
     await client.query(
-      'INSERT INTO assignments (service_request_id, technician_id, assigned_by) VALUES ($1, $2, $3)',
+      "INSERT INTO assignments (service_request_id, technician_id, assigned_by) VALUES ($1, $2, $3)",
       [params.serviceRequestId, params.technicianId, params.assignedBy],
     );
-    await client.query('UPDATE service_requests SET status = $1, updated_at = now() WHERE id = $2', [
-      'ASSIGNED',
-      params.serviceRequestId,
-    ]);
-    await client.query('COMMIT');
+    await client.query(
+      "UPDATE service_requests SET status = $1, updated_at = now() WHERE id = $2",
+      ["ASSIGNED", params.serviceRequestId],
+    );
+    await client.query("COMMIT");
   } catch (err) {
-    await client.query('ROLLBACK');
+    await client.query("ROLLBACK");
     throw err;
   } finally {
     client.release();

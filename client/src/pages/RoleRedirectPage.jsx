@@ -1,13 +1,13 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from "react-router-dom";
 
-import { useMe } from '../api/me';
-import { ErrorState } from '../components/ErrorState';
-import { LoadingState } from '../components/LoadingState';
+import { useMe } from "../api/me";
+import { ErrorState } from "../components/ErrorState";
+import { LoadingState } from "../components/LoadingState";
 
 const ROLE_HOME = {
-  ADMIN: '/admin',
-  TECHNICIAN: '/technician',
-  CUSTOMER: '/customer',
+  ADMIN: "/admin",
+  TECHNICIAN: "/technician",
+  CUSTOMER: "/customer",
 };
 
 export function RoleRedirectPage() {
@@ -26,12 +26,15 @@ export function RoleRedirectPage() {
   if (isError || !me) {
     return (
       <main className="flex min-h-svh items-center justify-center">
-        <ErrorState message="Couldn't load your account." onRetry={() => refetch()} />
+        <ErrorState
+          message="Couldn't load your account."
+          onRetry={() => refetch()}
+        />
       </main>
     );
   }
 
-  const homePath = ROLE_HOME[me.role] ?? '/';
+  const homePath = ROLE_HOME[me.role] ?? "/";
 
   // RoleGate sends people here with accessDenied when they hit a page their
   // role doesn't allow. Surface that instead of silently bouncing them
@@ -41,7 +44,9 @@ export function RoleRedirectPage() {
     return (
       <main className="flex min-h-svh items-center justify-center px-4">
         <div className="flex flex-col items-center gap-3 py-12 text-center">
-          <p className="text-sm text-destructive">You don't have access to that page.</p>
+          <p className="text-sm text-destructive">
+            You don't have access to that page.
+          </p>
           <button
             type="button"
             onClick={() => window.location.assign(homePath)}

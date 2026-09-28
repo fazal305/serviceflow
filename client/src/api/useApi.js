@@ -1,7 +1,7 @@
-import { useAuth } from '@clerk/clerk-react';
-import { useCallback } from 'react';
+import { useAuth } from "@clerk/clerk-react";
+import { useCallback } from "react";
 
-import { apiFetch } from './http';
+import { apiFetch } from "./http";
 
 export function useApi() {
   const { getToken } = useAuth();

@@ -1,8 +1,8 @@
-import { useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 
-import { useMe } from '../api/me';
-import { getSupabaseClient } from '../lib/realtime';
+import { useMe } from "../api/me";
+import { getSupabaseClient } from "../lib/realtime";
 
 /**
  * Subscribes to this user's private Supabase Realtime channel and
@@ -30,13 +30,13 @@ export function useRealtimeSync() {
 
       const channel = client
         .channel(`user:${me.id}`)
-        .on('broadcast', { event: 'update' }, () => {
-          queryClient.invalidateQueries({ queryKey: ['notifications'] });
-          queryClient.invalidateQueries({ queryKey: ['dashboard-summary'] });
-          queryClient.invalidateQueries({ queryKey: ['service-requests'] });
-          queryClient.invalidateQueries({ queryKey: ['jobs'] });
-          queryClient.invalidateQueries({ queryKey: ['invoices'] });
-          queryClient.invalidateQueries({ queryKey: ['activity'] });
+        .on("broadcast", { event: "update" }, () => {
+          queryClient.invalidateQueries({ queryKey: ["notifications"] });
+          queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+          queryClient.invalidateQueries({ queryKey: ["service-requests"] });
+          queryClient.invalidateQueries({ queryKey: ["jobs"] });
+          queryClient.invalidateQueries({ queryKey: ["invoices"] });
+          queryClient.invalidateQueries({ queryKey: ["activity"] });
         })
         .subscribe();
 

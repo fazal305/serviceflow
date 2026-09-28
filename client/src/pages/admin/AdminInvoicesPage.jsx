@@ -1,27 +1,36 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState } from "react";
+import { Link } from "react-router-dom";
 
-import { useInvoices } from '../../api/invoices';
-import { EmptyState } from '../../components/EmptyState';
-import { ErrorState } from '../../components/ErrorState';
-import { inputClass } from '../../components/Field';
-import { LoadingState } from '../../components/LoadingState';
+import { useInvoices } from "../../api/invoices";
+import { EmptyState } from "../../components/EmptyState";
+import { ErrorState } from "../../components/ErrorState";
+import { inputClass } from "../../components/Field";
+import { LoadingState } from "../../components/LoadingState";
 
-const STATUS_OPTIONS = ['UNPAID', 'PARTIALLY_PAID', 'PAID'];
+const STATUS_OPTIONS = ["UNPAID", "PARTIALLY_PAID", "PAID"];
 
 function money(value) {
   return `$${Number(value).toFixed(2)}`;
 }
 
 export function AdminInvoicesPage() {
-  const [statusFilter, setStatusFilter] = useState('');
-  const { data: invoices, isPending, isError, refetch } = useInvoices(statusFilter || undefined);
+  const [statusFilter, setStatusFilter] = useState("");
+  const {
+    data: invoices,
+    isPending,
+    isError,
+    refetch,
+  } = useInvoices(statusFilter || undefined);
 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">Invoices</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Track invoices and payment status.</p>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          Invoices
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Track invoices and payment status.
+        </p>
       </div>
 
       <select
@@ -33,16 +42,24 @@ export function AdminInvoicesPage() {
         <option value="">All statuses</option>
         {STATUS_OPTIONS.map((s) => (
           <option key={s} value={s}>
-            {s.replaceAll('_', ' ')}
+            {s.replaceAll("_", " ")}
           </option>
         ))}
       </select>
 
       {isPending && <LoadingState label="Loading invoices…" />}
-      {isError && <ErrorState message="Couldn't load invoices." onRetry={() => refetch()} />}
+      {isError && (
+        <ErrorState
+          message="Couldn't load invoices."
+          onRetry={() => refetch()}
+        />
+      )}
 
       {invoices && invoices.length === 0 && (
-        <EmptyState title="No invoices" description="Invoices created from approved quotations will appear here." />
+        <EmptyState
+          title="No invoices"
+          description="Invoices created from approved quotations will appear here."
+        />
       )}
 
       {invoices && invoices.length > 0 && (
@@ -60,24 +77,35 @@ export function AdminInvoicesPage() {
             </thead>
             <tbody>
               {invoices.map((invoice) => (
-                <tr key={invoice.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-2.5 font-medium text-foreground">{invoice.invoiceNumber}</td>
+                <tr
+                  key={invoice.id}
+                  className="border-b border-border last:border-0"
+                >
+                  <td className="px-4 py-2.5 font-medium text-foreground">
+                    {invoice.invoiceNumber}
+                  </td>
                   <td className="px-4 py-2.5 text-muted-foreground">
                     {invoice.customerName ?? invoice.customerEmail}
                   </td>
-                  <td className="px-4 py-2.5 text-foreground">{money(invoice.total)}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{money(invoice.amountPaid)}</td>
+                  <td className="px-4 py-2.5 text-foreground">
+                    {money(invoice.total)}
+                  </td>
+                  <td className="px-4 py-2.5 text-muted-foreground">
+                    {money(invoice.amountPaid)}
+                  </td>
                   <td className="px-4 py-2.5">
                     <span
                       className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        invoice.status === 'PAID'
-                          ? 'bg-success/15 text-success'
+                        invoice.status === "PAID"
+                          ? "bg-success/15 text-success"
                           : invoice.isOverdue
-                            ? 'bg-destructive/15 text-destructive'
-                            : 'bg-warning/15 text-warning'
+                            ? "bg-destructive/15 text-destructive"
+                            : "bg-warning/15 text-warning"
                       }`}
                     >
-                      {invoice.isOverdue && invoice.status !== 'PAID' ? 'OVERDUE' : invoice.status.replace('_', ' ')}
+                      {invoice.isOverdue && invoice.status !== "PAID"
+                        ? "OVERDUE"
+                        : invoice.status.replace("_", " ")}
                     </span>
                   </td>
                   <td className="px-4 py-2.5 text-right">

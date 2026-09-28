@@ -1,51 +1,57 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState } from "react";
+import { Link } from "react-router-dom";
 
-import { useScheduleRequest } from '../../api/jobs';
-import { useAssignTechnician, useServiceRequests } from '../../api/serviceRequests';
-import { useTechnicians } from '../../api/technicians';
-import { EmptyState } from '../../components/EmptyState';
-import { ErrorState } from '../../components/ErrorState';
-import { inputClass } from '../../components/Field';
-import { LoadingState } from '../../components/LoadingState';
-import { Modal } from '../../components/Modal';
-import { StatusBadge } from '../../components/StatusBadge';
+import { useScheduleRequest } from "../../api/jobs";
+import {
+  useAssignTechnician,
+  useServiceRequests,
+} from "../../api/serviceRequests";
+import { useTechnicians } from "../../api/technicians";
+import { EmptyState } from "../../components/EmptyState";
+import { ErrorState } from "../../components/ErrorState";
+import { inputClass } from "../../components/Field";
+import { LoadingState } from "../../components/LoadingState";
+import { Modal } from "../../components/Modal";
+import { StatusBadge } from "../../components/StatusBadge";
 
 const STATUS_OPTIONS = [
-  'NEW',
-  'UNDER_REVIEW',
-  'ASSIGNED',
-  'SCHEDULED',
-  'IN_PROGRESS',
-  'WAITING_FOR_APPROVAL',
-  'QUOTATION_APPROVED',
-  'COMPLETED',
-  'CANCELLED',
+  "NEW",
+  "UNDER_REVIEW",
+  "ASSIGNED",
+  "SCHEDULED",
+  "IN_PROGRESS",
+  "WAITING_FOR_APPROVAL",
+  "QUOTATION_APPROVED",
+  "COMPLETED",
+  "CANCELLED",
 ];
 
-const ASSIGNABLE_STATUSES = ['NEW', 'UNDER_REVIEW'];
-const SCHEDULABLE_STATUSES = ['ASSIGNED'];
+const ASSIGNABLE_STATUSES = ["NEW", "UNDER_REVIEW"];
+const SCHEDULABLE_STATUSES = ["ASSIGNED"];
 
 export function AdminServiceRequestsPage() {
-  const [statusFilter, setStatusFilter] = useState('');
-  const { data: requests, isPending, isError, refetch } = useServiceRequests(
-    statusFilter ? { status: statusFilter } : undefined,
-  );
+  const [statusFilter, setStatusFilter] = useState("");
+  const {
+    data: requests,
+    isPending,
+    isError,
+    refetch,
+  } = useServiceRequests(statusFilter ? { status: statusFilter } : undefined);
   const { data: technicians } = useTechnicians();
   const assignTechnician = useAssignTechnician();
   const scheduleRequest = useScheduleRequest();
 
   const [assigningRequest, setAssigningRequest] = useState(null);
-  const [selectedTechnicianId, setSelectedTechnicianId] = useState('');
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState("");
   const [schedulingRequest, setSchedulingRequest] = useState(null);
-  const [scheduledDate, setScheduledDate] = useState('');
-  const [scheduledTime, setScheduledTime] = useState('');
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [scheduledTime, setScheduledTime] = useState("");
 
   const activeTechnicians = technicians?.filter((t) => t.isActive) ?? [];
 
   function openAssignModal(request) {
     assignTechnician.reset();
-    setSelectedTechnicianId('');
+    setSelectedTechnicianId("");
     setAssigningRequest(request);
   }
 
@@ -60,8 +66,8 @@ export function AdminServiceRequestsPage() {
 
   function openScheduleModal(request) {
     scheduleRequest.reset();
-    setScheduledDate(request.preferredDate ?? '');
-    setScheduledTime(request.preferredTime ?? '');
+    setScheduledDate(request.preferredDate ?? "");
+    setScheduledTime(request.preferredTime ?? "");
     setSchedulingRequest(request);
   }
 
@@ -78,8 +84,12 @@ export function AdminServiceRequestsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">Service Requests</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Review requests and assign technicians.</p>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          Service Requests
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Review requests and assign technicians.
+        </p>
       </div>
 
       <select
@@ -91,16 +101,24 @@ export function AdminServiceRequestsPage() {
         <option value="">All statuses</option>
         {STATUS_OPTIONS.map((s) => (
           <option key={s} value={s}>
-            {s.replaceAll('_', ' ')}
+            {s.replaceAll("_", " ")}
           </option>
         ))}
       </select>
 
       {isPending && <LoadingState label="Loading service requests…" />}
-      {isError && <ErrorState message="Couldn't load service requests." onRetry={() => refetch()} />}
+      {isError && (
+        <ErrorState
+          message="Couldn't load service requests."
+          onRetry={() => refetch()}
+        />
+      )}
 
       {requests && requests.length === 0 && (
-        <EmptyState title="No service requests" description="Requests submitted by customers will appear here." />
+        <EmptyState
+          title="No service requests"
+          description="Requests submitted by customers will appear here."
+        />
       )}
 
       {requests && requests.length > 0 && (
@@ -118,19 +136,30 @@ export function AdminServiceRequestsPage() {
             </thead>
             <tbody>
               {requests.map((request) => (
-                <tr key={request.id} className="border-b border-border last:border-0 align-top">
+                <tr
+                  key={request.id}
+                  className="border-b border-border last:border-0 align-top"
+                >
                   <td className="px-4 py-2.5">
-                    <p className="text-foreground">{request.customerName ?? request.customerEmail}</p>
+                    <p className="text-foreground">
+                      {request.customerName ?? request.customerEmail}
+                    </p>
                     <p className="mt-0.5 max-w-xs truncate text-xs text-muted-foreground">
                       {request.description}
                     </p>
                   </td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{request.serviceCategoryName ?? '—'}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{request.priority}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground">
+                    {request.serviceCategoryName ?? "—"}
+                  </td>
+                  <td className="px-4 py-2.5 text-muted-foreground">
+                    {request.priority}
+                  </td>
                   <td className="px-4 py-2.5">
                     <StatusBadge status={request.status} />
                   </td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{request.technicianName ?? '—'}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground">
+                    {request.technicianName ?? "—"}
+                  </td>
                   <td className="px-4 py-2.5 text-right">
                     {ASSIGNABLE_STATUSES.includes(request.status) && (
                       <button
@@ -164,13 +193,21 @@ export function AdminServiceRequestsPage() {
         </div>
       )}
 
-      <Modal open={!!assigningRequest} onClose={() => setAssigningRequest(null)} title="Assign technician">
+      <Modal
+        open={!!assigningRequest}
+        onClose={() => setAssigningRequest(null)}
+        title="Assign technician"
+      >
         {assigningRequest && (
           <div className="flex flex-col gap-4">
-            <p className="text-sm text-muted-foreground">{assigningRequest.description}</p>
+            <p className="text-sm text-muted-foreground">
+              {assigningRequest.description}
+            </p>
 
             {activeTechnicians.length === 0 ? (
-              <p className="text-sm text-destructive">No active technicians available. Add one first.</p>
+              <p className="text-sm text-destructive">
+                No active technicians available. Add one first.
+              </p>
             ) : (
               <select
                 value={selectedTechnicianId}
@@ -182,7 +219,9 @@ export function AdminServiceRequestsPage() {
                 {activeTechnicians.map((tech) => (
                   <option key={tech.id} value={tech.id}>
                     {tech.fullName ?? tech.email}
-                    {tech.serviceCategoryName ? ` — ${tech.serviceCategoryName}` : ''}
+                    {tech.serviceCategoryName
+                      ? ` — ${tech.serviceCategoryName}`
+                      : ""}
                   </option>
                 ))}
               </select>
@@ -190,7 +229,9 @@ export function AdminServiceRequestsPage() {
 
             {assignTechnician.isError && (
               <p role="alert" className="text-sm text-destructive">
-                {assignTechnician.error instanceof Error ? assignTechnician.error.message : 'Failed to assign'}
+                {assignTechnician.error instanceof Error
+                  ? assignTechnician.error.message
+                  : "Failed to assign"}
               </p>
             )}
 
@@ -200,18 +241,23 @@ export function AdminServiceRequestsPage() {
               disabled={!selectedTechnicianId || assignTechnician.isPending}
               className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:opacity-60"
             >
-              {assignTechnician.isPending ? 'Assigning…' : 'Confirm assignment'}
+              {assignTechnician.isPending ? "Assigning…" : "Confirm assignment"}
             </button>
           </div>
         )}
       </Modal>
 
-      <Modal open={!!schedulingRequest} onClose={() => setSchedulingRequest(null)} title="Schedule job">
+      <Modal
+        open={!!schedulingRequest}
+        onClose={() => setSchedulingRequest(null)}
+        title="Schedule job"
+      >
         {schedulingRequest && (
           <div className="flex flex-col gap-4">
             <p className="text-sm text-muted-foreground">
               {schedulingRequest.description}
-              {schedulingRequest.technicianName && ` — assigned to ${schedulingRequest.technicianName}`}
+              {schedulingRequest.technicianName &&
+                ` — assigned to ${schedulingRequest.technicianName}`}
             </p>
 
             <div className="grid grid-cols-2 gap-3">
@@ -238,7 +284,9 @@ export function AdminServiceRequestsPage() {
 
             {scheduleRequest.isError && (
               <p role="alert" className="text-sm text-destructive">
-                {scheduleRequest.error instanceof Error ? scheduleRequest.error.message : 'Failed to schedule'}
+                {scheduleRequest.error instanceof Error
+                  ? scheduleRequest.error.message
+                  : "Failed to schedule"}
               </p>
             )}
 
@@ -248,7 +296,7 @@ export function AdminServiceRequestsPage() {
               disabled={!scheduledDate || scheduleRequest.isPending}
               className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:opacity-60"
             >
-              {scheduleRequest.isPending ? 'Scheduling…' : 'Confirm schedule'}
+              {scheduleRequest.isPending ? "Scheduling…" : "Confirm schedule"}
             </button>
           </div>
         )}

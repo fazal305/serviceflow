@@ -1,11 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "@tanstack/react-query";
 
-import { useApi } from './useApi';
+import { useApi } from "./useApi";
 
 export function useActivity() {
   const api = useApi();
   return useQuery({
-    queryKey: ['activity'],
-    queryFn: () => api('/activity'),
+    queryKey: ["activity"],
+    queryFn: () => api("/activity"),
   });
 }

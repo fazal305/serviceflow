@@ -1,15 +1,19 @@
-import { Router } from 'express';
+import { Router } from "express";
 
-import { listRecentActivity } from '../db/activityLog.js';
-import { requireAuthentication, requireRole, syncUser } from '../middleware/auth.js';
+import { listRecentActivity } from "../db/activityLog.js";
+import {
+  requireAuthentication,
+  requireRole,
+  syncUser,
+} from "../middleware/auth.js";
 
 export const activityRouter = Router();
 
 activityRouter.get(
-  '/activity',
+  "/activity",
   requireAuthentication,
   syncUser,
-  requireRole('ADMIN'),
+  requireRole("ADMIN"),
   async (_req, res) => {
     res.json(await listRecentActivity());
   },

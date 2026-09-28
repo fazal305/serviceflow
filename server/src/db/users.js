@@ -1,4 +1,4 @@
-import { getPool } from './pool.js';
+import { getPool } from "./pool.js";
 
 function toAppUser(row) {
   return {
@@ -15,7 +15,7 @@ function toAppUser(row) {
 
 export async function findUserByClerkId(clerkUserId) {
   const { rows } = await getPool().query(
-    'SELECT * FROM users WHERE clerk_user_id = $1',
+    "SELECT * FROM users WHERE clerk_user_id = $1",
     [clerkUserId],
   );
   return rows[0] ? toAppUser(rows[0]) : null;

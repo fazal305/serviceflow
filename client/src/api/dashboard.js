@@ -1,11 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery } from "@tanstack/react-query";
 
-import { useApi } from './useApi';
+import { useApi } from "./useApi";
 
 export function useDashboardSummary() {
   const api = useApi();
   return useQuery({
-    queryKey: ['dashboard-summary'],
-    queryFn: () => api('/dashboard/summary'),
+    queryKey: ["dashboard-summary"],
+    queryFn: () => api("/dashboard/summary"),
   });
 }

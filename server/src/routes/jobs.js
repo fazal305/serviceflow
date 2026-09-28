@@ -1,8 +1,8 @@
-import { Router } from 'express';
-import { z } from 'zod';
+import { Router } from "express";
+import { z } from "zod";
 
-import { logActivity } from '../db/activityLog.js';
-import { getCustomerById } from '../db/customers.js';
+import { logActivity } from "../db/activityLog.js";
+import { getCustomerById } from "../db/customers.js";
 import {
   addJobNote,
   addJobPart,
@@ -14,67 +14,79 @@ import {
   listJobsForAdmin,
   listJobsForTechnician,
   startJob,
-} from '../db/jobs.js';
-import { createNotification } from '../db/notifications.js';
-import { getServiceRequestById } from '../db/serviceRequests.js';
-import { canTransition } from '../domain/serviceRequestStatus.js';
-import { requireAuthentication, requireRole, syncUser } from '../middleware/auth.js';
-import { ApiError } from '../middleware/errorHandler.js';
-import { validateBody } from '../middleware/validate.js';
+} from "../db/jobs.js";
+import { createNotification } from "../db/notifications.js";
+import { getServiceRequestById } from "../db/serviceRequests.js";
+import { canTransition } from "../domain/serviceRequestStatus.js";
+import {
+  requireAuthentication,
+  requireRole,
+  syncUser,
+} from "../middleware/auth.js";
+import { ApiError } from "../middleware/errorHandler.js";
+import { validateBody } from "../middleware/validate.js";
 
 export const jobsRouter = Router();
 
 async function loadOwnedJob(req) {
   const job = await getJobById(req.params.id);
-  if (!job) throw new ApiError(404, 'Job not found');
+  if (!job) throw new ApiError(404, "Job not found");
 
-  if (req.appUser.role === 'TECHNICIAN') {
+  if (req.appUser.role === "TECHNICIAN") {
     const technicianId = await getTechnicianIdForUser(req.appUser.id);
     if (technicianId !== job.technicianId) {
-      throw new ApiError(403, 'You do not have permission to access this job');
+      throw new ApiError(403, "You do not have permission to access this job");
     }
   }
 
   return job;
 }
 
-jobsRouter.get('/jobs', requireAuthentication, syncUser, async (req, res) => {
-  if (req.appUser.role === 'ADMIN') {
+jobsRouter.get("/jobs", requireAuthentication, syncUser, async (req, res) => {
+  if (req.appUser.role === "ADMIN") {
     res.json(await listJobsForAdmin());
     return;
   }
 
-  if (req.appUser.role === 'TECHNICIAN') {
+  if (req.appUser.role === "TECHNICIAN") {
     const technicianId = await getTechnicianIdForUser(req.appUser.id);
     res.json(technicianId ? await listJobsForTechnician(technicianId) : []);
     return;
   }
 
-  throw new ApiError(403, 'You do not have permission to view jobs');
+  throw new ApiError(403, "You do not have permission to view jobs");
 });
 
-jobsRouter.get('/jobs/:id', requireAuthentication, syncUser, async (req, res) => {
-  const job = await loadOwnedJob(req);
-  const [notes, parts] = await Promise.all([listJobNotes(job.id), listJobParts(job.id)]);
-  res.json({ ...job, notes, parts });
-});
-
-jobsRouter.post(
-  '/jobs/:id/start',
+jobsRouter.get(
+  "/jobs/:id",
   requireAuthentication,
   syncUser,
-  requireRole('TECHNICIAN'),
   async (req, res) => {
     const job = await loadOwnedJob(req);
-    if (!canTransition(job.status, 'IN_PROGRESS')) {
+    const [notes, parts] = await Promise.all([
+      listJobNotes(job.id),
+      listJobParts(job.id),
+    ]);
+    res.json({ ...job, notes, parts });
+  },
+);
+
+jobsRouter.post(
+  "/jobs/:id/start",
+  requireAuthentication,
+  syncUser,
+  requireRole("TECHNICIAN"),
+  async (req, res) => {
+    const job = await loadOwnedJob(req);
+    if (!canTransition(job.status, "IN_PROGRESS")) {
       throw new ApiError(409, `Cannot start a job in status ${job.status}`);
     }
     await startJob(job.id, job.serviceRequestId);
 
     await logActivity({
       actorUserId: req.appUser.id,
-      action: 'JOB_STARTED',
-      entityType: 'job',
+      action: "JOB_STARTED",
+      entityType: "job",
       entityId: job.id,
     });
 
@@ -83,32 +95,35 @@ jobsRouter.post(
 );
 
 jobsRouter.post(
-  '/jobs/:id/complete',
+  "/jobs/:id/complete",
   requireAuthentication,
   syncUser,
-  requireRole('TECHNICIAN'),
+  requireRole("TECHNICIAN"),
   async (req, res) => {
     const job = await loadOwnedJob(req);
-    if (!canTransition(job.status, 'WAITING_FOR_APPROVAL')) {
+    if (!canTransition(job.status, "WAITING_FOR_APPROVAL")) {
       throw new ApiError(409, `Cannot complete a job in status ${job.status}`);
     }
     await completeJob(job.id, job.serviceRequestId);
 
     const serviceRequest = await getServiceRequestById(job.serviceRequestId);
-    const customer = serviceRequest ? await getCustomerById(serviceRequest.customerId) : null;
+    const customer = serviceRequest
+      ? await getCustomerById(serviceRequest.customerId)
+      : null;
     await Promise.all([
       logActivity({
         actorUserId: req.appUser.id,
-        action: 'JOB_COMPLETED',
-        entityType: 'job',
+        action: "JOB_COMPLETED",
+        entityType: "job",
         entityId: job.id,
       }),
       customer &&
         createNotification({
           userId: customer.userId,
-          title: 'Job completed',
-          message: 'The technician has completed the work. A quotation will follow shortly.',
-          entityType: 'service_request',
+          title: "Job completed",
+          message:
+            "The technician has completed the work. A quotation will follow shortly.",
+          entityType: "service_request",
           entityId: job.serviceRequestId,
         }),
     ]);
@@ -122,10 +137,10 @@ const noteSchema = z.object({
 });
 
 jobsRouter.post(
-  '/jobs/:id/notes',
+  "/jobs/:id/notes",
   requireAuthentication,
   syncUser,
-  requireRole('TECHNICIAN'),
+  requireRole("TECHNICIAN"),
   validateBody(noteSchema),
   async (req, res) => {
     const job = await loadOwnedJob(req);
@@ -141,10 +156,10 @@ const partSchema = z.object({
 });
 
 jobsRouter.post(
-  '/jobs/:id/parts',
+  "/jobs/:id/parts",
   requireAuthentication,
   syncUser,
-  requireRole('TECHNICIAN'),
+  requireRole("TECHNICIAN"),
   validateBody(partSchema),
   async (req, res) => {
     const job = await loadOwnedJob(req);

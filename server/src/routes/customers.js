@@ -1,9 +1,13 @@
-import { Router } from 'express';
-import { z } from 'zod';
+import { Router } from "express";
+import { z } from "zod";
 
-import { listCustomers } from '../db/customers.js';
-import { requireAuthentication, requireRole, syncUser } from '../middleware/auth.js';
-import { validateQuery } from '../middleware/validate.js';
+import { listCustomers } from "../db/customers.js";
+import {
+  requireAuthentication,
+  requireRole,
+  syncUser,
+} from "../middleware/auth.js";
+import { validateQuery } from "../middleware/validate.js";
 
 export const customersRouter = Router();
 
@@ -12,10 +16,10 @@ const listQuerySchema = z.object({
 });
 
 customersRouter.get(
-  '/customers',
+  "/customers",
   requireAuthentication,
   syncUser,
-  requireRole('ADMIN'),
+  requireRole("ADMIN"),
   validateQuery(listQuerySchema),
   async (req, res) => {
     const { search } = req.validatedQuery;

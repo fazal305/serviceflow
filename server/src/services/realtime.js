@@ -1,6 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
-import { env } from '../config/env.js';
+import { env } from "../config/env.js";
 
 let client;
 
@@ -37,9 +37,13 @@ export async function broadcastToUser(userId, kind) {
 
   try {
     const channel = supabase.channel(`user:${userId}`);
-    await channel.send({ type: 'broadcast', event: 'update', payload: { kind } });
+    await channel.send({
+      type: "broadcast",
+      event: "update",
+      payload: { kind },
+    });
     await supabase.removeChannel(channel);
   } catch (err) {
-    console.error('Realtime broadcast failed (non-fatal):', err);
+    console.error("Realtime broadcast failed (non-fatal):", err);
   }
 }

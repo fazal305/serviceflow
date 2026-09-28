@@ -1,5 +1,5 @@
-import { SignIn } from '@clerk/clerk-react';
-import { useLocation } from 'react-router-dom';
+import { SignIn } from "@clerk/clerk-react";
+import { useLocation } from "react-router-dom";
 
 export function SignInPage() {
   const location = useLocation();
@@ -12,7 +12,12 @@ export function SignInPage() {
           Your session has expired — please sign in again.
         </p>
       )}
-      <SignIn routing="path" path="/sign-in" signUpUrl="/sign-up" fallbackRedirectUrl="/app" />
+      <SignIn
+        routing="path"
+        path="/sign-in"
+        signUpUrl="/sign-up"
+        fallbackRedirectUrl="/app"
+      />
     </main>
   );
 }

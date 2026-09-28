@@ -1,4 +1,4 @@
-export function ErrorState({ message = 'Something went wrong.', onRetry }) {
+export function ErrorState({ message = "Something went wrong.", onRetry }) {
   return (
     <div className="flex flex-col items-center gap-3 py-12 text-center">
       <p className="text-sm text-destructive">{message}</p>

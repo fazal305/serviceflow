@@ -1,10 +1,14 @@
-import { Router } from 'express';
-import rateLimit from 'express-rate-limit';
-import { z } from 'zod';
+import { Router } from "express";
+import rateLimit from "express-rate-limit";
+import { z } from "zod";
 
-import { requireAuthentication, requireRole, syncUser } from '../middleware/auth.js';
-import { validateBody } from '../middleware/validate.js';
-import { classifyServiceRequest } from '../services/aiAssistant.js';
+import {
+  requireAuthentication,
+  requireRole,
+  syncUser,
+} from "../middleware/auth.js";
+import { validateBody } from "../middleware/validate.js";
+import { classifyServiceRequest } from "../services/aiAssistant.js";
 
 export const aiRouter = Router();
 
@@ -18,10 +22,10 @@ const classifySchema = z.object({
 });
 
 aiRouter.post(
-  '/ai/classify',
+  "/ai/classify",
   requireAuthentication,
   syncUser,
-  requireRole('CUSTOMER'),
+  requireRole("CUSTOMER"),
   aiRateLimit,
   validateBody(classifySchema),
   async (req, res) => {

@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient } from "@tanstack/react-query";
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -11,7 +11,7 @@ export const queryClient = new QueryClient({
       // Don't defer to the browser's navigator.onLine — it's unreliable
       // behind proxies/automated environments and would otherwise leave
       // queries stuck in a "paused" state despite the network being fine.
-      networkMode: 'always',
+      networkMode: "always",
     },
   },
 });

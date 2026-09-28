@@ -1,4 +1,4 @@
-import { getPool } from './pool.js';
+import { getPool } from "./pool.js";
 
 export async function logActivity(params) {
   await getPool().query(

@@ -1,4 +1,4 @@
-import { getPool } from './pool.js';
+import { getPool } from "./pool.js";
 
 function toJob(row) {
   return {
@@ -40,7 +40,7 @@ const SELECT_JOB = `
 
 export async function getTechnicianIdForUser(userId) {
   const { rows } = await getPool().query(
-    'SELECT id FROM technicians WHERE user_id = $1',
+    "SELECT id FROM technicians WHERE user_id = $1",
     [userId],
   );
   return rows[0]?.id ?? null;
@@ -50,24 +50,24 @@ export async function scheduleJob(params) {
   const pool = getPool();
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
     const { rows } = await client.query(
       `INSERT INTO jobs (service_request_id, scheduled_date, scheduled_time)
        VALUES ($1, $2, $3)
        RETURNING id`,
       [params.serviceRequestId, params.scheduledDate, params.scheduledTime],
     );
-    await client.query('UPDATE service_requests SET status = $1, updated_at = now() WHERE id = $2', [
-      'SCHEDULED',
-      params.serviceRequestId,
-    ]);
-    await client.query('COMMIT');
+    await client.query(
+      "UPDATE service_requests SET status = $1, updated_at = now() WHERE id = $2",
+      ["SCHEDULED", params.serviceRequestId],
+    );
+    await client.query("COMMIT");
 
     const job = await getJobById(rows[0].id);
-    if (!job) throw new Error('Failed to load job after scheduling');
+    if (!job) throw new Error("Failed to load job after scheduling");
     return job;
   } catch (err) {
-    await client.query('ROLLBACK');
+    await client.query("ROLLBACK");
     throw err;
   } finally {
     client.release();
@@ -94,21 +94,27 @@ export async function listJobsForAdmin() {
   return rows.map(toJob);
 }
 
-async function transitionAndTimestamp(jobId, serviceRequestId, status, timestampColumn) {
+async function transitionAndTimestamp(
+  jobId,
+  serviceRequestId,
+  status,
+  timestampColumn,
+) {
   const pool = getPool();
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
-    await client.query(`UPDATE jobs SET ${timestampColumn} = now(), updated_at = now() WHERE id = $1`, [
-      jobId,
-    ]);
-    await client.query('UPDATE service_requests SET status = $1, updated_at = now() WHERE id = $2', [
-      status,
-      serviceRequestId,
-    ]);
-    await client.query('COMMIT');
+    await client.query("BEGIN");
+    await client.query(
+      `UPDATE jobs SET ${timestampColumn} = now(), updated_at = now() WHERE id = $1`,
+      [jobId],
+    );
+    await client.query(
+      "UPDATE service_requests SET status = $1, updated_at = now() WHERE id = $2",
+      [status, serviceRequestId],
+    );
+    await client.query("COMMIT");
   } catch (err) {
-    await client.query('ROLLBACK');
+    await client.query("ROLLBACK");
     throw err;
   } finally {
     client.release();
@@ -116,11 +122,21 @@ async function transitionAndTimestamp(jobId, serviceRequestId, status, timestamp
 }
 
 export async function startJob(jobId, serviceRequestId) {
-  await transitionAndTimestamp(jobId, serviceRequestId, 'IN_PROGRESS', 'started_at');
+  await transitionAndTimestamp(
+    jobId,
+    serviceRequestId,
+    "IN_PROGRESS",
+    "started_at",
+  );
 }
 
 export async function completeJob(jobId, serviceRequestId) {
-  await transitionAndTimestamp(jobId, serviceRequestId, 'WAITING_FOR_APPROVAL', 'completed_at');
+  await transitionAndTimestamp(
+    jobId,
+    serviceRequestId,
+    "WAITING_FOR_APPROVAL",
+    "completed_at",
+  );
 }
 
 export async function listJobNotes(jobId) {
@@ -132,7 +148,12 @@ export async function listJobNotes(jobId) {
      ORDER BY jn.created_at`,
     [jobId],
   );
-  return rows.map((r) => ({ id: r.id, note: r.note, authorName: r.author_name, createdAt: r.created_at }));
+  return rows.map((r) => ({
+    id: r.id,
+    note: r.note,
+    authorName: r.author_name,
+    createdAt: r.created_at,
+  }));
 }
 
 export async function addJobNote(jobId, authorUserId, note) {
@@ -140,12 +161,17 @@ export async function addJobNote(jobId, authorUserId, note) {
     `INSERT INTO job_notes (job_id, author_user_id, note) VALUES ($1, $2, $3) RETURNING id, created_at`,
     [jobId, authorUserId, note],
   );
-  return { id: rows[0].id, note, authorName: null, createdAt: rows[0].created_at };
+  return {
+    id: rows[0].id,
+    note,
+    authorName: null,
+    createdAt: rows[0].created_at,
+  };
 }
 
 export async function listJobParts(jobId) {
   const { rows } = await getPool().query(
-    'SELECT id, name, quantity, unit_cost, created_at FROM job_parts WHERE job_id = $1 ORDER BY created_at',
+    "SELECT id, name, quantity, unit_cost, created_at FROM job_parts WHERE job_id = $1 ORDER BY created_at",
     [jobId],
   );
   return rows.map((r) => ({

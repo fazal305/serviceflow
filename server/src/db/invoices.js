@@ -1,5 +1,5 @@
-import { getPool } from './pool.js';
-import { getQuotationById } from './quotations.js';
+import { getPool } from "./pool.js";
+import { getQuotationById } from "./quotations.js";
 
 const SELECT_INVOICE = `
   SELECT i.*, u.full_name AS customer_name, u.email AS customer_email
@@ -10,7 +10,7 @@ const SELECT_INVOICE = `
 
 async function loadInvoiceItems(invoiceId) {
   const { rows } = await getPool().query(
-    'SELECT id, type, description, quantity, unit_price FROM invoice_items WHERE invoice_id = $1',
+    "SELECT id, type, description, quantity, unit_price FROM invoice_items WHERE invoice_id = $1",
     [invoiceId],
   );
   return rows.map((r) => ({
@@ -42,10 +42,15 @@ async function loadPayments(invoiceId) {
 }
 
 async function toInvoice(row) {
-  const [items, payments] = await Promise.all([loadInvoiceItems(row.id), loadPayments(row.id)]);
+  const [items, payments] = await Promise.all([
+    loadInvoiceItems(row.id),
+    loadPayments(row.id),
+  ]);
   const amountPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
   const isOverdue =
-    row.status !== 'PAID' && !!row.due_date && new Date(row.due_date) < new Date(new Date().toDateString());
+    row.status !== "PAID" &&
+    !!row.due_date &&
+    new Date(row.due_date) < new Date(new Date().toDateString());
 
   return {
     id: row.id,
@@ -71,21 +76,24 @@ async function toInvoice(row) {
 
 export async function createInvoiceFromQuotation(params) {
   const quotation = await getQuotationById(params.quotationId);
-  if (!quotation) throw new Error('Quotation not found');
-  if (quotation.status !== 'APPROVED') throw new Error('Quotation is not approved');
+  if (!quotation) throw new Error("Quotation not found");
+  if (quotation.status !== "APPROVED")
+    throw new Error("Quotation is not approved");
 
   const pool = getPool();
   const client = await pool.connect();
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
     const { rows: srRows } = await client.query(
-      'SELECT customer_id FROM service_requests WHERE id = $1',
+      "SELECT customer_id FROM service_requests WHERE id = $1",
       [quotation.serviceRequestId],
     );
     const customerId = srRows[0].customer_id;
 
-    const { rows: seqRows } = await client.query("SELECT nextval('invoice_number_seq')");
+    const { rows: seqRows } = await client.query(
+      "SELECT nextval('invoice_number_seq')",
+    );
     const invoiceNumber = `INV-${seqRows[0].nextval}`;
 
     const { rows } = await client.query(
@@ -115,13 +123,13 @@ export async function createInvoiceFromQuotation(params) {
       );
     }
 
-    await client.query('COMMIT');
+    await client.query("COMMIT");
 
     const invoice = await getInvoiceById(invoiceId);
-    if (!invoice) throw new Error('Failed to load invoice after creation');
+    if (!invoice) throw new Error("Failed to load invoice after creation");
     return invoice;
   } catch (err) {
-    await client.query('ROLLBACK');
+    await client.query("ROLLBACK");
     throw err;
   } finally {
     client.release();
@@ -129,7 +137,9 @@ export async function createInvoiceFromQuotation(params) {
 }
 
 export async function getInvoiceById(id) {
-  const { rows } = await getPool().query(`${SELECT_INVOICE} WHERE i.id = $1`, [id]);
+  const { rows } = await getPool().query(`${SELECT_INVOICE} WHERE i.id = $1`, [
+    id,
+  ]);
   return rows[0] ? toInvoice(rows[0]) : null;
 }
 

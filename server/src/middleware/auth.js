@@ -1,14 +1,14 @@
-import { clerkClient } from '@clerk/express';
-import { verifyToken } from '@clerk/backend';
+import { clerkClient } from "@clerk/express";
+import { verifyToken } from "@clerk/backend";
 
-import { env } from '../config/env.js';
-import { createUser, findUserByClerkId } from '../db/users.js';
-import { ApiError } from './errorHandler.js';
+import { env } from "../config/env.js";
+import { createUser, findUserByClerkId } from "../db/users.js";
+import { ApiError } from "./errorHandler.js";
 
 function extractBearerToken(req) {
   const header = req.headers.authorization;
-  if (!header?.startsWith('Bearer ')) return null;
-  return header.slice('Bearer '.length);
+  if (!header?.startsWith("Bearer ")) return null;
+  return header.slice("Bearer ".length);
 }
 
 function sleep(ms) {
@@ -27,7 +27,10 @@ async function verifyTokenWithRetry(token, attempts = 3) {
   let lastError;
   for (let attempt = 0; attempt < attempts; attempt++) {
     try {
-      return await verifyToken(token, { secretKey: env.clerkSecretKey, clockSkewInMs: 15_000 });
+      return await verifyToken(token, {
+        secretKey: env.clerkSecretKey,
+        clockSkewInMs: 15_000,
+      });
     } catch (err) {
       lastError = err;
       if (attempt < attempts - 1) await sleep(150 * (attempt + 1));
@@ -49,7 +52,7 @@ async function verifyTokenWithRetry(token, attempts = 3) {
 export async function requireAuthentication(req, _res, next) {
   const token = extractBearerToken(req);
   if (!token) {
-    throw new ApiError(401, 'Not authenticated');
+    throw new ApiError(401, "Not authenticated");
   }
 
   try {
@@ -57,7 +60,7 @@ export async function requireAuthentication(req, _res, next) {
     req.auth = { userId: verified.sub };
     next();
   } catch {
-    throw new ApiError(401, 'Not authenticated');
+    throw new ApiError(401, "Not authenticated");
   }
 }
 
@@ -70,25 +73,29 @@ export async function requireAuthentication(req, _res, next) {
 export async function syncUser(req, _res, next) {
   try {
     const userId = req.auth?.userId;
-    if (!userId) throw new ApiError(401, 'Not authenticated');
+    if (!userId) throw new ApiError(401, "Not authenticated");
 
     let user = await findUserByClerkId(userId);
 
     if (!user) {
       const clerkUser = await clerkClient.users.getUser(userId);
-      const email = clerkUser.emailAddresses[0]?.emailAddress ?? '';
+      const email = clerkUser.emailAddresses[0]?.emailAddress ?? "";
       const existingRole = clerkUser.publicMetadata.role;
-      const role = existingRole ?? 'CUSTOMER';
+      const role = existingRole ?? "CUSTOMER";
 
       user = await createUser({
         clerkUserId: userId,
         role,
         email,
-        fullName: [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ') || null,
+        fullName:
+          [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") ||
+          null,
       });
 
       if (!existingRole) {
-        await clerkClient.users.updateUserMetadata(userId, { publicMetadata: { role } });
+        await clerkClient.users.updateUserMetadata(userId, {
+          publicMetadata: { role },
+        });
       }
     }
 
@@ -102,7 +109,10 @@ export async function syncUser(req, _res, next) {
 export function requireRole(...roles) {
   return (req, _res, next) => {
     if (!req.appUser || !roles.includes(req.appUser.role)) {
-      throw new ApiError(403, 'You do not have permission to perform this action');
+      throw new ApiError(
+        403,
+        "You do not have permission to perform this action",
+      );
     }
     next();
   };

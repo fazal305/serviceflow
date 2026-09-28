@@ -1,22 +1,26 @@
-import { clerkClient } from '@clerk/express';
-import { randomBytes } from 'node:crypto';
-import { Router } from 'express';
-import { z } from 'zod';
+import { clerkClient } from "@clerk/express";
+import { randomBytes } from "node:crypto";
+import { Router } from "express";
+import { z } from "zod";
 
-import { logActivity } from '../db/activityLog.js';
-import { createTechnicianProfile, listTechnicians } from '../db/technicians.js';
-import { createUser, findUserByClerkId } from '../db/users.js';
-import { requireAuthentication, requireRole, syncUser } from '../middleware/auth.js';
-import { validateBody } from '../middleware/validate.js';
-import { ApiError } from '../middleware/errorHandler.js';
+import { logActivity } from "../db/activityLog.js";
+import { createTechnicianProfile, listTechnicians } from "../db/technicians.js";
+import { createUser, findUserByClerkId } from "../db/users.js";
+import {
+  requireAuthentication,
+  requireRole,
+  syncUser,
+} from "../middleware/auth.js";
+import { validateBody } from "../middleware/validate.js";
+import { ApiError } from "../middleware/errorHandler.js";
 
 export const techniciansRouter = Router();
 
 techniciansRouter.get(
-  '/technicians',
+  "/technicians",
   requireAuthentication,
   syncUser,
-  requireRole('ADMIN'),
+  requireRole("ADMIN"),
   async (_req, res) => {
     res.json(await listTechnicians());
   },
@@ -32,14 +36,14 @@ const createTechnicianSchema = z.object({
 function generateTempPassword() {
   // 16 random bytes -> base64url, plus a fixed symbol/digit so it always
   // satisfies Clerk's default complexity requirements regardless of luck.
-  return `${randomBytes(16).toString('base64url')}#1`;
+  return `${randomBytes(16).toString("base64url")}#1`;
 }
 
 techniciansRouter.post(
-  '/technicians',
+  "/technicians",
   requireAuthentication,
   syncUser,
-  requireRole('ADMIN'),
+  requireRole("ADMIN"),
   validateBody(createTechnicianSchema),
   async (req, res) => {
     const { email, firstName, lastName, serviceCategoryId } = req.body;
@@ -50,22 +54,25 @@ techniciansRouter.post(
     try {
       clerkUser = await clerkClient.users.createUser({
         emailAddress: [email],
-        username: `tech_${randomBytes(6).toString('hex')}`,
+        username: `tech_${randomBytes(6).toString("hex")}`,
         password: tempPassword,
         firstName,
         lastName,
-        publicMetadata: { role: 'TECHNICIAN' },
+        publicMetadata: { role: "TECHNICIAN" },
       });
     } catch (err) {
-      console.error('Failed to create technician Clerk account:', err);
-      throw new ApiError(422, 'Could not create account for this email — it may already be in use');
+      console.error("Failed to create technician Clerk account:", err);
+      throw new ApiError(
+        422,
+        "Could not create account for this email — it may already be in use",
+      );
     }
 
     let dbUser = await findUserByClerkId(clerkUser.id);
     if (!dbUser) {
       dbUser = await createUser({
         clerkUserId: clerkUser.id,
-        role: 'TECHNICIAN',
+        role: "TECHNICIAN",
         email,
         fullName: `${firstName} ${lastName}`,
       });
@@ -78,8 +85,8 @@ techniciansRouter.post(
 
     await logActivity({
       actorUserId: req.appUser.id,
-      action: 'TECHNICIAN_CREATED',
-      entityType: 'technician',
+      action: "TECHNICIAN_CREATED",
+      entityType: "technician",
       entityId: technician.id,
       metadata: { email },
     });

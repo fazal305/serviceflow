@@ -1,8 +1,8 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet } from "react-router-dom";
 
-import { useMe } from '../api/me';
-import { ErrorState } from '../components/ErrorState';
-import { LoadingState } from '../components/LoadingState';
+import { useMe } from "../api/me";
+import { ErrorState } from "../components/ErrorState";
+import { LoadingState } from "../components/LoadingState";
 
 export function RoleGate({ role }) {
   const { data: me, isPending, isError, refetch } = useMe();
@@ -13,7 +13,13 @@ export function RoleGate({ role }) {
   // let this fall through to the role-mismatch branch below and bounce an
   // about-to-be-confirmed admin straight back out to /app on every cold load.
   if (isPending) return <LoadingState label="Checking your account…" />;
-  if (isError) return <ErrorState message="Couldn't verify your account." onRetry={() => refetch()} />;
+  if (isError)
+    return (
+      <ErrorState
+        message="Couldn't verify your account."
+        onRetry={() => refetch()}
+      />
+    );
   if (me.role !== role) {
     return <Navigate to="/app" replace state={{ accessDenied: true }} />;
   }

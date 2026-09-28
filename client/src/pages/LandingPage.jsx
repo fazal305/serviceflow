@@ -1,5 +1,5 @@
-import { SignedIn, SignedOut } from '@clerk/clerk-react';
-import { Navigate, Link } from 'react-router-dom';
+import { SignedIn, SignedOut } from "@clerk/clerk-react";
+import { Navigate, Link } from "react-router-dom";
 
 export function LandingPage() {
   return (
@@ -14,8 +14,8 @@ export function LandingPage() {
               ServiceFlow
             </h1>
             <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-              Service request tracking, technician dispatch, and invoicing —
-              in one place.
+              Service request tracking, technician dispatch, and invoicing — in
+              one place.
             </p>
           </div>
 
