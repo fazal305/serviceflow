@@ -527,3 +527,11 @@ production.
 - [x] **Phase 6** — OpenRouter AI Service Assistant
 - [x] **Phase 7** — Realtime updates (Supabase Realtime)
 - [ ] **Phase 8** — Testing, performance, security review, production deployment
+
+## License
+
+Free for personal, educational, and noncommercial use under the [PolyForm Noncommercial License 1.0.0](LICENSE).
+
+Commercial use requires a paid commercial license. Contact fazalabbas2002@gmail.com.
+
+Versions up to and including `v0.1.0-mit` were released under the MIT License and remain available under MIT.
