@@ -16,17 +16,31 @@ if (!clerkPublishableKey) {
 
 // Matches the navy/blue design tokens in index.css — keeps Clerk's hosted
 // UI (sign-in, sign-up, user menu) visually consistent with the rest of
-// the app instead of Clerk's default purple theme.
+// the app instead of Clerk's default purple theme. index.css switches to
+// dark tokens under prefers-color-scheme: dark, so mirror that here too —
+// otherwise the auth card stays a stark white card on top of the dark app.
+const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches
+
 const clerkAppearance = {
-  variables: {
-    colorPrimary: '#0369a1',
-    colorText: '#020617',
-    colorBackground: '#ffffff',
-    colorInputBackground: '#ffffff',
-    colorInputText: '#020617',
-    borderRadius: '0.5rem',
-    fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
-  },
+  variables: prefersDark
+    ? {
+        colorPrimary: '#0369a1',
+        colorText: '#f1f5f9',
+        colorBackground: '#111827',
+        colorInputBackground: '#0b1120',
+        colorInputText: '#f1f5f9',
+        borderRadius: '0.5rem',
+        fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+      }
+    : {
+        colorPrimary: '#0369a1',
+        colorText: '#020617',
+        colorBackground: '#ffffff',
+        colorInputBackground: '#ffffff',
+        colorInputText: '#020617',
+        borderRadius: '0.5rem',
+        fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+      },
 }
 
 createRoot(document.getElementById('root')).render(
