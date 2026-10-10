@@ -39,7 +39,7 @@ channels (Postgres change events) — no custom WebSocket server needed.
 
 **Why this shape:** Netlify only runs serverless Functions, not a
 long-lived process — so the same Express app that runs locally with
-`node`/`tsx` for development is wrapped with `serverless-http` and deployed
+`node` for development is wrapped with `serverless-http` and deployed
 as a single Netlify Function in production, rather than maintaining two
 separate backends. Realtime features (Section 17 of the spec — new request
 notifications, job status changes, live dashboard updates) can't use a
@@ -51,8 +51,8 @@ Supabase hosts the database.
 
 | Layer | Choice |
 |---|---|
-| Frontend | React 19, Vite, TypeScript, Tailwind CSS v4 |
-| Backend | Node.js, Express, TypeScript |
+| Frontend | React 19, Vite, JavaScript (JSX), Tailwind CSS v4 |
+| Backend | Node.js, Express, JavaScript |
 | Database | PostgreSQL (hosted on Supabase) |
 | Auth | Clerk (roles: `ADMIN`, `TECHNICIAN`, `CUSTOMER` via custom claims) |
 | Realtime | Supabase Realtime (Postgres change subscriptions) |
@@ -67,8 +67,8 @@ serviceflow/
 │   └── src/
 ├── server/                 # Express backend (runs locally as a normal process)
 │   └── src/
-│       ├── app.ts          # Express app factory (no .listen — reusable by both entrypoints)
-│       ├── index.ts        # Local dev entrypoint (calls .listen)
+│       ├── app.js          # Express app factory (no .listen — reusable by both entrypoints)
+│       ├── index.js        # Local dev entrypoint (calls .listen)
 │       ├── config/         # Environment loading/validation
 │       ├── routes/         # Route definitions
 │       ├── controllers/    # Request handling (added from Phase 1 onward)
@@ -76,7 +76,7 @@ serviceflow/
 │       ├── middleware/     # Error handling, auth, validation
 │       └── db/             # Database client (added from Phase 1 onward)
 ├── netlify/functions/
-│   └── api.ts               # Wraps server's Express app for Netlify Functions
+│   └── api.js               # Wraps server's Express app for Netlify Functions
 └── netlify.toml              # Build config, function bundling, redirects
 ```
 
@@ -94,7 +94,7 @@ serviceflow/
 
 **How the two get linked — just-in-time sync, not a webhook:**
 On a user's first authenticated request, `syncUser` middleware
-([server/src/middleware/auth.ts](server/src/middleware/auth.ts)) checks for
+([server/src/middleware/auth.js](server/src/middleware/auth.js)) checks for
 a `users` row matching their Clerk ID. If none exists, it creates one
 defaulting to `CUSTOMER` — the only role public sign-up can ever produce —
 and writes that role back to Clerk's `publicMetadata` for consistency. This
@@ -176,7 +176,7 @@ isn't just a design goal, it's mechanically enforced:
   optional step the frontend makes *before* filling in the form, never a
   precondition for submission.
 - Every failure mode inside `classifyServiceRequest`
-  (`server/src/services/aiAssistant.ts`) — no key configured, network
+  (`server/src/services/aiAssistant.js`) — no key configured, network
   error, a 12s timeout, a non-200 from OpenRouter, non-JSON output, or
   JSON that doesn't match the expected shape (validated with Zod) —
   normalizes to the same `{ success: false }` response with an HTTP `200`,
@@ -204,7 +204,7 @@ Scheduling / job execution — Phase 3
 ```
 
 Status transitions are centralized in
-[server/src/domain/serviceRequestStatus.ts](server/src/domain/serviceRequestStatus.ts)
+[server/src/domain/serviceRequestStatus.js](server/src/domain/serviceRequestStatus.js)
 (Section 19's requirement: no scattered status checks). Only the phase's
 actual transitions are enabled today (`NEW`/`UNDER_REVIEW` → `ASSIGNED` or
 `CANCELLED`); later statuses already exist in the DB enum but aren't
@@ -224,14 +224,14 @@ still open:
   `ETag` by default; without `Cache-Control: no-store`, the browser's HTTP
   cache doesn't know a response varies by `Authorization` header and can
   serve/revalidate one user's cached response for a different user's
-  request. Fixed globally in `app.ts` (`app.set('etag', false)` + a
+  request. Fixed globally in `app.js` (`app.set('etag', false)` + a
   `no-store` header on every response) rather than per-route.
 - **Clock skew between this environment and Clerk's token-issuing
   servers** intermittently failed JWT verification on genuinely valid
   tokens (confirmed by decoding a rejected token's `iat` against
   `Date.now()` on both sides at the same instant). Fixed with an explicit
   `clockSkewInMs` tolerance on `verifyToken`, plus a short retry as a
-  second line of defense — see `server/src/middleware/auth.ts`.
+  second line of defense — see `server/src/middleware/auth.js`.
 - **`clerkMiddleware()` + `getAuth(req)`** (Clerk's Express convenience
   combo) produced intermittent false-negative auth rejections on valid
   tokens, reproducible by re-verifying the exact rejected token directly
@@ -290,7 +290,7 @@ Two more bugs found and fixed during this phase:
   then serialize as full ISO timestamps instead of a plain `YYYY-MM-DD` —
   breaking both date display formatting and round-tripping into
   `<input type="date">`. Fixed once, at the driver level
-  (`types.setTypeParser(1082, ...)` in `server/src/db/pool.ts`), rather
+  (`types.setTypeParser(1082, ...)` in `server/src/db/pool.js`), rather
   than working around it at every call site that touches a date column.
 
 ## Quotations, invoices & payments (Phase 4)
